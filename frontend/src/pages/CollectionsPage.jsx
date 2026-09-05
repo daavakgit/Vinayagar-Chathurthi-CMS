@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useYear } from '../context/YearContext';
 import {
   getCollectionsApi, createCollectionApi, updateCollectionApi, deleteCollectionApi,
@@ -43,11 +44,14 @@ const CategoryBadge = ({ category }) => {
 
 export const CollectionsPage = () => {
   const { selectedYear } = useYear();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get('category') || 'all';
+
   const [collections, setCollections] = useState([]);
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useState(initialCategory);
   const [paymentStatus, setPaymentStatus] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -56,6 +60,13 @@ export const CollectionsPage = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
+
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) {
+      setCategory(cat);
+    }
+  }, [searchParams]);
 
   const loadCollections = useCallback(async () => {
     try {
@@ -119,6 +130,7 @@ export const CollectionsPage = () => {
     setPaymentStatus('all');
     setStartDate('');
     setEndDate('');
+    setSearchParams({});
   };
 
   return (
@@ -131,7 +143,9 @@ export const CollectionsPage = () => {
           <h1 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background font-bold">
             Collections
           </h1>
-          <p className="font-body-md text-on-surface-variant">Manage contributions for {selectedYear} event</p>
+          <p className="font-body-md text-on-surface-variant">
+            Manage contributions for {selectedYear} event {category !== 'all' && `(${getCategoryLabel(category)})`}
+          </p>
         </div>
         <button
           onClick={() => { setEditData(null); setModalOpen(true); }}
@@ -163,7 +177,7 @@ export const CollectionsPage = () => {
         search={search}
         onSearchChange={setSearch}
         category={category}
-        onCategoryChange={setCategory}
+        onCategoryChange={(val) => { setCategory(val); setSearchParams(val === 'all' ? {} : { category: val }); }}
         categoriesList={categoryList}
         paymentStatus={paymentStatus}
         onPaymentStatusChange={setPaymentStatus}

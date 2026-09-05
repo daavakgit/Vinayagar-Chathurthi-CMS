@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../context/YearContext';
-import { getDashboardApi } from '../services/api';
-import { formatCurrency, formatCompactCurrency, formatDate } from '../utils/formatters';
+import {
+  getDashboardApi, getCollectionsApi, getExpensesApi, getSplitsApi,
+} from '../services/api';
+import { formatCurrency, formatCompactCurrency, formatDate, getCategoryLabel } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 
-const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel }) => (
-  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col justify-between gap-3 bento-hover glass-card relative overflow-hidden">
-    <div className="flex items-center justify-between">
-      <span className="font-label-md text-label-md text-on-surface-variant font-medium">{label}</span>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass}`}>
+const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel, onClick, tooltipText }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={tooltipText || `Click to view ${label} details`}
+    className="w-full text-left rounded-2xl border border-outline-variant p-4 md:p-5 flex flex-col justify-between gap-3 bento-hover glass-card relative overflow-hidden transition-all duration-200 cursor-pointer hover:border-primary hover:shadow-lg active:scale-[0.98] group"
+  >
+    <div className="flex items-center justify-between w-full">
+      <span className="font-label-md text-label-md text-on-surface-variant font-semibold group-hover:text-primary transition-colors flex items-center gap-1">
+        {label}
+        <span className="material-symbols-outlined text-sm text-primary opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">touch_app</span>
+      </span>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass} group-hover:scale-110 transition-transform`}>
         <span className={`material-symbols-outlined text-xl ${colorClass}`}>{icon}</span>
       </div>
     </div>
@@ -20,28 +30,37 @@ const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', b
       {subValue && <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{subValue}</div>}
     </div>
     {trendLabel && (
-      <div className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant border-t border-outline-variant/40 pt-2">
+      <div className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant border-t border-outline-variant/40 pt-2 w-full">
         <span>{trendLabel}</span>
       </div>
     )}
-  </div>
+  </button>
 );
 
-const ActivityItem = ({ item }) => {
-  const isCollection = item.type === 'collection';
+const ModalWrapper = ({ isOpen, onClose, title, icon, iconColor = 'text-primary', children }) => {
+  if (!isOpen) return null;
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-outline-variant/40 last:border-0">
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-        isCollection ? 'bg-tertiary-container/40 text-tertiary' : 'bg-secondary-container/30 text-secondary'
-      }`}>
-        <span className="material-symbols-outlined text-base">{isCollection ? 'payments' : 'receipt_long'}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-label-md text-label-md text-on-background font-medium truncate">{item.title}</div>
-        <div className="font-label-sm text-[11px] text-on-surface-variant truncate">{item.subtitle} · {formatDate(item.date)}</div>
-      </div>
-      <div className={`font-label-md text-label-md font-bold flex-shrink-0 ${isCollection ? 'text-tertiary' : 'text-error'}`}>
-        {isCollection ? '+' : '-'}{formatCurrency(item.amount)}
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+      <div className="bg-surface border border-outline-variant rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-4 md:p-5 border-b border-outline-variant bg-surface-container-low/50 flex-shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center flex-shrink-0">
+              <span className={`material-symbols-outlined text-xl ${iconColor}`}>{icon}</span>
+            </div>
+            <h2 className="font-title-lg text-title-lg font-bold text-on-background truncate">{title}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+        {/* Modal Body */}
+        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-4">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -52,6 +71,11 @@ export const DashboardPage = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Active Modal State
+  const [activeModal, setActiveModal] = useState(null); // 'total' | 'collections' | 'expenses' | 'splits' | 'working' | 'student'
+  const [modalData, setModalData] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -67,6 +91,36 @@ export const DashboardPage = () => {
   }, [selectedYear]);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Open Modal Handler
+  const openModal = async (type) => {
+    setActiveModal(type);
+    setModalLoading(true);
+    setModalData([]);
+    try {
+      if (type === 'collections' || type === 'working' || type === 'student') {
+        const categoryParam = type === 'working' ? 'working' : type === 'student' ? 'student' : 'all';
+        const res = await getCollectionsApi({ year: selectedYear, category: categoryParam });
+        if (res.success) setModalData(res.data || []);
+      } else if (type === 'expenses') {
+        const res = await getExpensesApi({ year: selectedYear });
+        if (res.success) setModalData(res.data || []);
+      } else if (type === 'splits' || type === 'total') {
+        const [collectionsRes, splitsRes] = await Promise.all([
+          getCollectionsApi({ year: selectedYear }),
+          getSplitsApi({ year: selectedYear }),
+        ]);
+        setModalData({
+          collections: collectionsRes?.data || [],
+          splits: splitsRes?.data || [],
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load modal data:', err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -118,7 +172,7 @@ export const DashboardPage = () => {
             Dashboard
           </h1>
           <p className="font-body-md text-on-surface-variant">
-            Vinayagar Chathurthi {selectedYear} · Financial Overview
+            Vinayagar Chathurthi {selectedYear} · Financial Overview (Click any card to inspect details)
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -129,9 +183,9 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Row - 5 Cards Grid */}
+      {/* Primary KPI Row - 5 Fully Interactive StatCards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* 1. Total Collection (Direct + Recoveries) */}
+        {/* 1. Click Total Collection -> Opens Breakdown Modal */}
         <StatCard
           label="Total Collection"
           value={formatCurrency(m.totalCollection)}
@@ -139,9 +193,11 @@ export const DashboardPage = () => {
           icon="account_balance_wallet"
           colorClass="text-tertiary font-bold"
           bgClass="bg-tertiary-container/30"
+          onClick={() => openModal('total')}
+          tooltipText="Click to view full breakdown: Collections Amount + Split Recoveries"
         />
 
-        {/* 2. Collections Amount (Direct Donor Collections) */}
+        {/* 2. Click Collections Amount -> Opens Collections Modal */}
         <StatCard
           label="Collections Amount"
           value={formatCurrency(m.directCollection)}
@@ -150,9 +206,11 @@ export const DashboardPage = () => {
           colorClass="text-primary font-bold"
           bgClass="bg-primary-container/20"
           trendLabel={`${m.totalContributors || 0} Total Enrolled`}
+          onClick={() => openModal('collections')}
+          tooltipText="Click to view list of all contributors who paid"
         />
 
-        {/* 3. Total Expenses */}
+        {/* 3. Click Total Expenses -> Opens Expenses Modal */}
         <StatCard
           label="Total Expenses"
           value={formatCurrency(m.totalExpenses)}
@@ -160,9 +218,11 @@ export const DashboardPage = () => {
           icon="receipt_long"
           colorClass="text-error"
           bgClass="bg-error-container/20"
+          onClick={() => openModal('expenses')}
+          tooltipText="Click to view all expense item details"
         />
 
-        {/* 4. Event Balance */}
+        {/* 4. Click Event Balance */}
         <StatCard
           label="Event Balance"
           value={formatCurrency(m.eventBalance)}
@@ -170,9 +230,11 @@ export const DashboardPage = () => {
           icon={balancePositive ? 'trending_up' : 'trending_down'}
           colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
           bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
+          onClick={() => openModal('total')}
+          tooltipText="Click to view event balance summary"
         />
 
-        {/* 5. Split Recoveries */}
+        {/* 5. Click Split Recoveries -> Opens Split Modal */}
         <StatCard
           label="Split Recoveries"
           value={formatCurrency(m.totalRecovered)}
@@ -181,15 +243,25 @@ export const DashboardPage = () => {
           colorClass="text-[#008645]"
           bgClass="bg-[#008645]/10"
           trendLabel={`Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
+          onClick={() => openModal('splits')}
+          tooltipText="Click to view split advances given, recovered, and pending"
         />
       </div>
 
-      {/* Category Breakdown Row */}
+      {/* Category Breakdown Row - Interactive Category Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-primary text-xl">work</span>
-            <span className="font-label-md text-label-md text-on-surface-variant font-medium">Working People</span>
+        {/* Working People Card */}
+        <button
+          type="button"
+          onClick={() => openModal('working')}
+          className="w-full text-left bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card cursor-pointer hover:border-primary transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-xl">work</span>
+              <span className="font-label-md text-label-md text-on-surface-variant font-semibold group-hover:text-primary transition-colors">Working People</span>
+            </div>
+            <span className="material-symbols-outlined text-sm text-primary">touch_app</span>
           </div>
           <div className="font-headline-lg text-headline-lg-mobile text-primary font-bold">{formatCurrency(m.workingCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.workingCount || 0} contributors enrolled</div>
@@ -197,12 +269,20 @@ export const DashboardPage = () => {
             <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.workingCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
           </div>
           <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.workingCollection / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
-        </div>
+        </button>
 
-        <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-secondary text-xl">school</span>
-            <span className="font-label-md text-label-md text-on-surface-variant font-medium">School / College</span>
+        {/* School / College Card */}
+        <button
+          type="button"
+          onClick={() => openModal('student')}
+          className="w-full text-left bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card cursor-pointer hover:border-secondary transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-xl">school</span>
+              <span className="font-label-md text-label-md text-on-surface-variant font-semibold group-hover:text-secondary transition-colors">School / College</span>
+            </div>
+            <span className="material-symbols-outlined text-sm text-secondary">touch_app</span>
           </div>
           <div className="font-headline-lg text-headline-lg-mobile text-secondary font-bold">{formatCurrency(m.studentCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.studentCount || 0} students enrolled</div>
@@ -210,12 +290,20 @@ export const DashboardPage = () => {
             <div className="bg-secondary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.studentCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
           </div>
           <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.studentCollection / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
-        </div>
+        </button>
 
-        <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-tertiary text-xl">people</span>
-            <span className="font-label-md text-label-md text-on-surface-variant font-medium">General Public</span>
+        {/* General Public Card */}
+        <button
+          type="button"
+          onClick={() => openModal('collections')}
+          className="w-full text-left bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card cursor-pointer hover:border-tertiary transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-tertiary text-xl">people</span>
+              <span className="font-label-md text-label-md text-on-surface-variant font-semibold group-hover:text-tertiary transition-colors">General Public</span>
+            </div>
+            <span className="material-symbols-outlined text-sm text-tertiary">touch_app</span>
           </div>
           <div className="font-headline-lg text-headline-lg-mobile text-tertiary font-bold">{formatCurrency(m.generalPublicCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.generalPublicCount || 0} voluntary contributors</div>
@@ -223,12 +311,20 @@ export const DashboardPage = () => {
             <div className="bg-tertiary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.generalPublicCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
           </div>
           <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.generalPublicCollection / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
-        </div>
+        </button>
 
-        <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-[#008645] text-xl">download_done</span>
-            <span className="font-label-md text-label-md text-on-surface-variant font-medium">Split Recoveries</span>
+        {/* Split Recoveries Card */}
+        <button
+          type="button"
+          onClick={() => openModal('splits')}
+          className="w-full text-left bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card cursor-pointer hover:border-[#008645] transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#008645] text-xl">download_done</span>
+              <span className="font-label-md text-label-md text-on-surface-variant font-semibold group-hover:text-[#008645] transition-colors">Split Recoveries</span>
+            </div>
+            <span className="material-symbols-outlined text-sm text-[#008645]">touch_app</span>
           </div>
           <div className="font-headline-lg text-headline-lg-mobile text-[#008645] font-bold">{formatCurrency(m.totalRecovered)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">From advance settlements</div>
@@ -236,12 +332,11 @@ export const DashboardPage = () => {
             <div className="bg-[#008645] h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.totalRecovered / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
           </div>
           <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.totalRecovered / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
-        </div>
+        </button>
       </div>
 
       {/* Charts + Activity Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Bar Chart - Collection vs Expenses */}
         <div className="md:col-span-2 bg-surface border border-outline-variant rounded-2xl p-5 glass-card">
           <h2 className="font-title-md text-title-md text-on-background font-bold mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-xl">bar_chart</span>
@@ -262,7 +357,6 @@ export const DashboardPage = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Pie Chart - Category Breakdown */}
         <div className="bg-surface border border-outline-variant rounded-2xl p-5 glass-card">
           <h2 className="font-title-md text-title-md text-on-background font-bold mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-secondary text-xl">pie_chart</span>
@@ -292,67 +386,262 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Recent Activity + Pending Contributors */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-surface border border-outline-variant rounded-2xl p-5 glass-card">
-          <h2 className="font-title-md text-title-md text-on-background font-bold mb-2 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-xl">history</span>
-            Recent Activity
-          </h2>
-          {(m.recentActivity || []).length === 0 ? (
-            <p className="font-body-md text-on-surface-variant text-center py-8">No activity recorded yet</p>
-          ) : (
-            <div>
-              {(m.recentActivity || []).map((item) => (
-                <ActivityItem key={`${item.type}-${item.id}`} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-surface border border-outline-variant rounded-2xl p-5 glass-card">
-          <h2 className="font-title-md text-title-md text-on-background font-bold mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-xl">pending_actions</span>
-            Payment Status
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between font-label-md text-label-md text-on-background mb-1">
-                <span>Paid Contributors</span>
-                <span className="text-tertiary font-bold">{m.paidContributorsCount || 0} / {m.totalContributors || 0}</span>
-              </div>
-              <div className="bg-surface-container-high rounded-full h-2.5 overflow-hidden">
-                <div className="bg-tertiary h-full rounded-full transition-all"
-                  style={{ width: `${m.totalContributors > 0 ? ((m.paidContributorsCount / m.totalContributors) * 100).toFixed(0) : 0}%` }} />
-              </div>
-              <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">
-                {m.totalContributors > 0 ? ((m.paidContributorsCount / m.totalContributors) * 100).toFixed(1) : 0}% collection rate
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-outline-variant/40">
-              <div className="bg-surface-container rounded-xl p-3 text-center">
-                <div className="font-headline-lg text-headline-lg-mobile text-tertiary font-bold">{m.paidContributorsCount || 0}</div>
-                <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">Paid</div>
-              </div>
-              <div className="bg-error-container/20 rounded-xl p-3 text-center">
-                <div className="font-headline-lg text-headline-lg-mobile text-error font-bold">{m.pendingContributorsCount || 0}</div>
-                <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">Pending</div>
-              </div>
-            </div>
-
-            {m.yetToRecover > 0 && (
-              <div className="bg-primary-container/10 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary text-2xl">warning</span>
-                <div>
-                  <div className="font-label-md text-label-md text-primary font-bold">{formatCurrency(m.yetToRecover)} Yet to Recover</div>
-                  <div className="font-label-sm text-[11px] text-on-surface-variant">Advance amounts pending settlement</div>
-                </div>
-              </div>
-            )}
+      {/* MODAL 1: TOTAL COLLECTION BREAKDOWN */}
+      <ModalWrapper
+        isOpen={activeModal === 'total'}
+        onClose={() => setActiveModal(null)}
+        title="Total Collection Breakdown"
+        icon="account_balance_wallet"
+        iconColor="text-tertiary"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-primary-container/20 border border-primary/20 rounded-xl p-3.5 text-center">
+            <div className="font-label-sm text-on-surface-variant font-medium">Collections Amount</div>
+            <div className="font-headline-md text-primary font-bold mt-1">{formatCurrency(m.directCollection)}</div>
+          </div>
+          <div className="bg-[#008645]/10 border border-[#008645]/30 rounded-xl p-3.5 text-center">
+            <div className="font-label-sm text-on-surface-variant font-medium">Split Recoveries</div>
+            <div className="font-headline-md text-[#008645] font-bold mt-1">{formatCurrency(m.totalRecovered)}</div>
+          </div>
+          <div className="bg-tertiary-container/30 border border-tertiary/30 rounded-xl p-3.5 text-center sm:col-span-1 col-span-1">
+            <div className="font-label-sm text-on-surface-variant font-semibold">Total Collection</div>
+            <div className="font-headline-md text-tertiary font-extrabold mt-1">{formatCurrency(m.totalCollection)}</div>
           </div>
         </div>
-      </div>
+
+        <div className="border-t border-outline-variant pt-4 space-y-3">
+          <h3 className="font-title-sm font-bold text-on-background">Inflow Sources Summary</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between p-2.5 rounded-lg bg-surface-container">
+              <span>Working People Collections ({m.workingCount || 0})</span>
+              <span className="font-bold text-primary">{formatCurrency(m.workingCollection)}</span>
+            </div>
+            <div className="flex justify-between p-2.5 rounded-lg bg-surface-container">
+              <span>School / College Collections ({m.studentCount || 0})</span>
+              <span className="font-bold text-secondary">{formatCurrency(m.studentCollection)}</span>
+            </div>
+            <div className="flex justify-between p-2.5 rounded-lg bg-surface-container">
+              <span>General Public Voluntary ({m.generalPublicCount || 0})</span>
+              <span className="font-bold text-tertiary">{formatCurrency(m.generalPublicCollection)}</span>
+            </div>
+            <div className="flex justify-between p-2.5 rounded-lg bg-[#008645]/10 text-on-background">
+              <span>Advance Settlements Recovered</span>
+              <span className="font-bold text-[#008645]">{formatCurrency(m.totalRecovered)}</span>
+            </div>
+          </div>
+        </div>
+      </ModalWrapper>
+
+      {/* MODAL 2: COLLECTIONS AMOUNT (All paid contributors) */}
+      <ModalWrapper
+        isOpen={activeModal === 'collections'}
+        onClose={() => setActiveModal(null)}
+        title="Collections Amount — Paid Contributors"
+        icon="payments"
+        iconColor="text-primary"
+      >
+        <div className="flex items-center justify-between bg-primary-container/20 p-3.5 rounded-xl border border-primary/20">
+          <div>
+            <div className="font-label-sm text-on-surface-variant">Total Direct Collection</div>
+            <div className="font-headline-sm text-primary font-bold">{formatCurrency(m.directCollection)}</div>
+          </div>
+          <div className="text-right">
+            <div className="font-label-sm text-on-surface-variant">Paid Count</div>
+            <div className="font-headline-sm text-tertiary font-bold">{m.paidContributorsCount || 0} / {m.totalContributors || 0}</div>
+          </div>
+        </div>
+
+        {modalLoading ? (
+          <LoadingSpinner label="Loading contributor details..." />
+        ) : modalData.length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No collection records found for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {modalData.map((c) => (
+              <div key={c._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-label-md font-bold text-on-background">{c.name}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{c.phone || 'No Phone'} · {getCategoryLabel(c.category)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-label-md font-bold text-tertiary">{formatCurrency(c.actualAmount)}</div>
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.paymentStatus === 'Received' ? 'bg-tertiary-container/40 text-tertiary' : 'bg-error-container/30 text-error'}`}>
+                    {c.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ModalWrapper>
+
+      {/* MODAL 3: TOTAL EXPENSES */}
+      <ModalWrapper
+        isOpen={activeModal === 'expenses'}
+        onClose={() => setActiveModal(null)}
+        title="Total Expenses Details"
+        icon="receipt_long"
+        iconColor="text-error"
+      >
+        <div className="bg-error-container/20 p-3.5 rounded-xl border border-error/30 flex items-center justify-between">
+          <div>
+            <div className="font-label-sm text-on-surface-variant">Total Event Expenses</div>
+            <div className="font-headline-sm text-error font-bold">{formatCurrency(m.totalExpenses)}</div>
+          </div>
+          <span className="material-symbols-outlined text-error text-3xl">receipt_long</span>
+        </div>
+
+        {modalLoading ? (
+          <LoadingSpinner label="Loading expense details..." />
+        ) : modalData.length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No expense records found for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {modalData.map((e) => (
+              <div key={e._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-label-md font-bold text-on-background">{e.expenseName}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{e.category} · {formatDate(e.date)}</div>
+                  {e.description && <div className="font-body-sm text-xs text-on-surface-variant/80 mt-0.5">{e.description}</div>}
+                </div>
+                <div className="font-label-md font-bold text-error text-right">{formatCurrency(e.amount)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ModalWrapper>
+
+      {/* MODAL 4: SPLIT RECOVERIES */}
+      <ModalWrapper
+        isOpen={activeModal === 'splits'}
+        onClose={() => setActiveModal(null)}
+        title="Split Advances & Recoveries"
+        icon="download_done"
+        iconColor="text-[#008645]"
+      >
+        <div className="grid grid-cols-3 gap-2 text-center bg-surface-container p-3 rounded-xl border border-outline-variant">
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Given</div>
+            <div className="font-title-md font-bold text-primary">{formatCurrency(m.totalSplitGiven)}</div>
+          </div>
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Recovered</div>
+            <div className="font-title-md font-bold text-[#008645]">{formatCurrency(m.totalRecovered)}</div>
+          </div>
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Pending</div>
+            <div className="font-title-md font-bold text-error">{formatCurrency(m.yetToRecover)}</div>
+          </div>
+        </div>
+
+        {modalLoading ? (
+          <LoadingSpinner label="Loading split settlements..." />
+        ) : (modalData.splits || []).length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No split advance records found for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60 space-y-2">
+            {(modalData.splits || []).map((s) => {
+              const pending = Math.max(0, (s.amountGiven || 0) - (s.totalRecovered || 0));
+              return (
+                <div key={s._id} className="py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="font-label-md font-bold text-on-background">{s.personName}</div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.status === 'Completed' ? 'bg-[#008645]/20 text-[#008645]' : 'bg-error-container/30 text-error'}`}>
+                      {s.status}
+                    </span>
+                  </div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{s.purpose || 'No Purpose'} · Phone: {s.phone || '—'}</div>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span>Given: <b>{formatCurrency(s.amountGiven)}</b></span>
+                    <span>Recovered: <b className="text-[#008645]">{formatCurrency(s.totalRecovered || 0)}</b></span>
+                    <span>Pending: <b className="text-error">{formatCurrency(pending)}</b></span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </ModalWrapper>
+
+      {/* MODAL 5: WORKING PEOPLE */}
+      <ModalWrapper
+        isOpen={activeModal === 'working'}
+        onClose={() => setActiveModal(null)}
+        title="Working People Collections"
+        icon="work"
+        iconColor="text-primary"
+      >
+        <div className="bg-primary-container/20 p-3.5 rounded-xl border border-primary/20 flex items-center justify-between">
+          <div>
+            <div className="font-label-sm text-on-surface-variant">Working People Collection</div>
+            <div className="font-headline-sm text-primary font-bold">{formatCurrency(m.workingCollection)}</div>
+          </div>
+          <div className="text-right font-label-md font-bold text-on-background">{m.workingCount || 0} Enrolled</div>
+        </div>
+
+        {modalLoading ? (
+          <LoadingSpinner label="Loading working people..." />
+        ) : modalData.length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No working people records for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {modalData.map((c) => (
+              <div key={c._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-label-md font-bold text-on-background">{c.name}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{c.phone || 'No Phone'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-label-md font-bold text-tertiary">{formatCurrency(c.actualAmount)}</div>
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.paymentStatus === 'Received' ? 'bg-tertiary-container/40 text-tertiary' : 'bg-error-container/30 text-error'}`}>
+                    {c.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ModalWrapper>
+
+      {/* MODAL 6: SCHOOL / COLLEGE */}
+      <ModalWrapper
+        isOpen={activeModal === 'student'}
+        onClose={() => setActiveModal(null)}
+        title="School / College Collections"
+        icon="school"
+        iconColor="text-secondary"
+      >
+        <div className="bg-secondary-container/20 p-3.5 rounded-xl border border-secondary/20 flex items-center justify-between">
+          <div>
+            <div className="font-label-sm text-on-surface-variant">Students Collection</div>
+            <div className="font-headline-sm text-secondary font-bold">{formatCurrency(m.studentCollection)}</div>
+          </div>
+          <div className="text-right font-label-md font-bold text-on-background">{m.studentCount || 0} Students</div>
+        </div>
+
+        {modalLoading ? (
+          <LoadingSpinner label="Loading student records..." />
+        ) : modalData.length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No student records for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {modalData.map((c) => (
+              <div key={c._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-label-md font-bold text-on-background">{c.name}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{c.phone || 'No Phone'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-label-md font-bold text-tertiary">{formatCurrency(c.actualAmount)}</div>
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.paymentStatus === 'Received' ? 'bg-tertiary-container/40 text-tertiary' : 'bg-error-container/30 text-error'}`}>
+                    {c.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ModalWrapper>
     </div>
   );
 };
