@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 
 const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel }) => (
-  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col justify-between gap-3 bento-hover glass-card">
+  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col gap-3 bento-hover glass-card">
     <div className="flex items-center justify-between">
       <span className="font-label-md text-label-md text-on-surface-variant font-medium">{label}</span>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass}`}>
@@ -129,7 +129,7 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Row - Original 4 Cards Layout */}
+      {/* Primary KPI Row - Original 4 Cards UI Layout */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total Collection"
@@ -138,7 +138,6 @@ export const DashboardPage = () => {
           icon="payments"
           colorClass="text-tertiary"
           bgClass="bg-tertiary-container/20"
-          trendLabel={`${m.totalContributors || 0} Total Enrolled`}
         />
         <StatCard
           label="Total Expenses"
@@ -151,13 +150,13 @@ export const DashboardPage = () => {
         <StatCard
           label="Event Balance"
           value={formatCurrency(m.eventBalance)}
-          subValue="Total Collection minus Expenses"
+          subValue="Total Collection minus expenses"
           icon={balancePositive ? 'trending_up' : 'trending_down'}
           colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
           bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
         />
         <StatCard
-          label="Advance Recovery"
+          label="Split Recoveries"
           value={formatCurrency(m.totalRecovered)}
           subValue={`Yet to recover: ${formatCurrency(m.yetToRecover || 0)}`}
           icon="download_done"

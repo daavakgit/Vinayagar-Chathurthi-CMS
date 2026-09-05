@@ -6,13 +6,6 @@ import Recovery from '../models/Recovery.js';
 
 export const seedDefaults = async () => {
   try {
-    // Clean out all old dummy data
-    await Collection.deleteMany({});
-    await Expense.deleteMany({});
-    await Split.deleteMany({});
-    await Recovery.deleteMany({});
-    console.log('🧹 Cleaned all dummy collections, expenses, splits, and recoveries.');
-
     // Seed default Settings if none exist
     const settingsCount = await Settings.countDocuments();
     if (settingsCount === 0) {

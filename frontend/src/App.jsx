@@ -13,7 +13,7 @@ import { SettingsPage } from './pages/SettingsPage';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <YearProvider>
         <div className="min-h-screen bg-background">
           <Sidebar />
