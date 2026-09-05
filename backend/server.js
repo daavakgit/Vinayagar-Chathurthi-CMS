@@ -11,6 +11,7 @@ import recoveryRoutes from './routes/recoveryRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/splits', splitRoutes);

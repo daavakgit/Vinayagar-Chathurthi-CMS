@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useYear } from '../context/YearContext';
+import { useAuth } from '../context/AuthContext';
 import { getSettingsApi, createYearSettingApi, updateSettingApi, clearDataApi } from '../services/api';
 import { formatCurrency } from '../utils/formatters';
 import { Toast } from '../components/Toast';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
 export const SettingsPage = () => {
-  const { selectedYear, refreshSettings, settingsList } = useYear();
+  const navigate = useNavigate();
+  const { selectedYear, refreshSettings } = useYear();
+  const { logoutAdmin, adminUser } = useAuth();
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState(null);
@@ -14,7 +18,13 @@ export const SettingsPage = () => {
   const [newYearForm, setNewYearForm] = useState({ show: false, year: new Date().getFullYear() + 1, workingDefaultAmount: 2000, studentDefaultAmount: 500, eventName: 'Vinayagar Chathurthi' });
   const [toast, setToast] = useState({ message: '' });
   const [clearConfirm, setClearConfirm] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/portal');
+  };
 
   useEffect(() => {
     loadSettings();
@@ -120,13 +130,22 @@ export const SettingsPage = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background font-bold">Settings</h1>
-          <p className="font-body-md text-on-surface-variant">Manage year-wise event configurations and defaults</p>
+          <p className="font-body-md text-on-surface-variant">Manage year-wise event configurations and admin session</p>
         </div>
-        <button onClick={() => setNewYearForm({ ...newYearForm, show: true })}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-bold shadow-sm hover:bg-primary-container transition-all active:scale-95">
-          <span className="material-symbols-outlined text-xl">add</span>
-          Add New Year
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-error/40 text-error hover:bg-error hover:text-on-error font-label-md font-bold transition-all active:scale-95 shadow-xs"
+          >
+            <span className="material-symbols-outlined text-lg">logout</span>
+            Logout Admin
+          </button>
+          <button onClick={() => setNewYearForm({ ...newYearForm, show: true })}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-bold shadow-sm hover:bg-primary-container transition-all active:scale-95">
+            <span className="material-symbols-outlined text-xl">add</span>
+            Add New Year
+          </button>
+        </div>
       </div>
 
       {/* Year Settings Cards */}
@@ -275,6 +294,37 @@ export const SettingsPage = () => {
         </div>
       )}
 
+      {/* Admin Session & Security */}
+      <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4 shadow-sm glass-card">
+        <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary text-xl">admin_panel_settings</span>
+            <h2 className="font-title-md font-bold text-on-background">Admin Session & Security</h2>
+          </div>
+          <span className="text-xs bg-secondary-container/40 text-secondary font-bold px-2.5 py-1 rounded-full">
+            Active Admin
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs md:text-sm">
+          <div>
+            <div className="font-bold text-on-background text-base">
+              {adminUser?.email || 'daavakjaganathan10@gmail.com'}
+            </div>
+            <div className="text-on-surface-variant mt-0.5">
+              Full Administrator CRUD permissions granted
+            </div>
+          </div>
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="px-5 py-2.5 rounded-xl bg-error text-on-error font-title-sm font-bold hover:bg-error/90 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-lg">logout</span>
+            <span>Logout Admin Session</span>
+          </button>
+        </div>
+      </div>
+
       {/* Data Management */}
       <div className="bg-error-container/10 border border-error/20 rounded-2xl p-5 space-y-4">
         <h2 className="font-title-md text-title-md text-on-background font-bold flex items-center gap-2">
@@ -295,6 +345,15 @@ export const SettingsPage = () => {
           </button>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        title="Logout Admin Session"
+        message="Are you sure you want to log out of the Admin Portal? You will need to enter your admin credentials again to access full organizer tools."
+        confirmText="Yes, Logout Now"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
 
       <ConfirmationModal
         isOpen={!!clearConfirm}

@@ -3,12 +3,12 @@ import { NavLink } from 'react-router-dom';
 
 export const MobileNavigation = () => {
   const navItems = [
-    { label: 'Home', path: '/', icon: 'home' },
-    { label: 'Collect', path: '/collections', icon: 'payments' },
-    { label: 'Spend', path: '/expenses', icon: 'receipt_long' },
-    { label: 'Split', path: '/split', icon: 'handshake' },
-    { label: 'Stats', path: '/reports', icon: 'bar_chart' },
-    { label: 'Settings', path: '/settings', icon: 'settings' },
+    { label: 'Home', path: '/admin', icon: 'home', end: true },
+    { label: 'Collect', path: '/admin/collections', icon: 'payments' },
+    { label: 'Spend', path: '/admin/expenses', icon: 'receipt_long' },
+    { label: 'Split', path: '/admin/split', icon: 'handshake' },
+    { label: 'Stats', path: '/admin/reports', icon: 'bar_chart' },
+    { label: 'Settings', path: '/admin/settings', icon: 'settings' },
   ];
 
   return (
@@ -17,11 +17,11 @@ export const MobileNavigation = () => {
         <NavLink
           key={item.path}
           to={item.path}
-          end={item.path === '/'}
+          end={item.end}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 active:scale-90 ${
+            `flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 active:scale-90 ${
               isActive
-                ? 'text-primary font-bold bg-surface-container-high'
+                ? 'text-primary font-bold bg-primary/10 border-b-2 border-primary'
                 : 'text-on-surface-variant hover:text-primary'
             }`
           }

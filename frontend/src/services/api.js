@@ -60,4 +60,7 @@ export const clearDataApi = (payload) => api.post('/settings/clear-data', payloa
 // Reports
 export const getReportsApi = (params) => api.get('/reports', { params });
 
+// Authentication
+export const loginAdminApi = (credentials) => api.post('/auth/login', credentials);
+
 export default api;

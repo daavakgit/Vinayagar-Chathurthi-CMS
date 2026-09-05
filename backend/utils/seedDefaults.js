@@ -3,9 +3,26 @@ import Collection from '../models/Collection.js';
 import Expense from '../models/Expense.js';
 import Split from '../models/Split.js';
 import Recovery from '../models/Recovery.js';
+import User from '../models/User.js';
 
 export const seedDefaults = async () => {
   try {
+    // Seed Admin User credentials into DB
+    const adminEmail = process.env.ADMIN_EMAIL || 'daavakjaganathan10@gmail.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'daavak@1912';
+
+    await User.findOneAndUpdate(
+      { email: adminEmail.toLowerCase() },
+      {
+        email: adminEmail.toLowerCase(),
+        password: adminPassword,
+        role: 'admin',
+        name: 'Festival Organizer Admin',
+      },
+      { upsert: true, new: true }
+    );
+    console.log(`👤 Admin user (${adminEmail}) synchronized in database.`);
+
     // Seed default Settings if none exist
     const settingsCount = await Settings.countDocuments();
     if (settingsCount === 0) {
