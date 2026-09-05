@@ -7,13 +7,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 
-const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel, isHighlighted = false }) => (
-  <div className={`rounded-2xl border ${isHighlighted ? 'border-tertiary/40 bg-tertiary/5 shadow-md' : 'border-outline-variant'} p-5 flex flex-col justify-between gap-3 bento-hover glass-card relative overflow-hidden`}>
-    {isHighlighted && (
-      <div className="absolute top-0 right-0 bg-tertiary text-on-tertiary text-[10px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
-        Direct + Recoveries
-      </div>
-    )}
+const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel }) => (
+  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col justify-between gap-3 bento-hover glass-card">
     <div className="flex items-center justify-between">
       <span className="font-label-md text-label-md text-on-surface-variant font-medium">{label}</span>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass}`}>
@@ -22,7 +17,7 @@ const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', b
     </div>
     <div>
       <div className={`font-headline-lg text-headline-lg font-bold tracking-tight ${colorClass}`}>{value}</div>
-      {subValue && <div className="font-label-sm text-label-sm text-on-surface font-semibold mt-1">{subValue}</div>}
+      {subValue && <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{subValue}</div>}
     </div>
     {trendLabel && (
       <div className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant border-t border-outline-variant/40 pt-2">
@@ -134,36 +129,16 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Row - 5 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* FIRST BOX: Total Collection (Direct Collection + Split Recoveries) */}
+      {/* Primary KPI Row - Original 4 Cards Layout */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total Collection"
           value={formatCurrency(m.totalCollection)}
-          subValue={`${formatCurrency(m.directCollection || 0)} (Collection) + ${formatCurrency(m.totalRecovered || 0)} (Recoveries)`}
-          icon="account_balance_wallet"
-          colorClass="text-tertiary font-bold"
-          bgClass="bg-tertiary-container/30"
-          trendLabel="Total Collection (Direct + Recoveries)"
-          isHighlighted={true}
-        />
-        <StatCard
-          label="Direct Collections"
-          value={formatCurrency(m.directCollection)}
           subValue={`${m.paidContributorsCount || 0} Paid Contributors`}
           icon="payments"
-          colorClass="text-primary"
-          bgClass="bg-primary-container/20"
+          colorClass="text-tertiary"
+          bgClass="bg-tertiary-container/20"
           trendLabel={`${m.totalContributors || 0} Total Enrolled`}
-        />
-        <StatCard
-          label="Split Recoveries"
-          value={formatCurrency(m.totalRecovered)}
-          subValue={`Yet to recover: ${formatCurrency(m.yetToRecover || 0)}`}
-          icon="download_done"
-          colorClass="text-[#008645]"
-          bgClass="bg-[#008645]/10"
-          trendLabel={`Total Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
         />
         <StatCard
           label="Total Expenses"
@@ -180,6 +155,15 @@ export const DashboardPage = () => {
           icon={balancePositive ? 'trending_up' : 'trending_down'}
           colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
           bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
+        />
+        <StatCard
+          label="Advance Recovery"
+          value={formatCurrency(m.totalRecovered)}
+          subValue={`Yet to recover: ${formatCurrency(m.yetToRecover || 0)}`}
+          icon="download_done"
+          colorClass="text-primary"
+          bgClass="bg-primary-container/20"
+          trendLabel={`Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
         />
       </div>
 
