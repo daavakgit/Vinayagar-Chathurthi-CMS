@@ -3,13 +3,17 @@ import { useYear } from '../context/YearContext';
 import { getDashboardApi } from '../services/api';
 import { formatCurrency, formatCompactCurrency, formatDate } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { YearSelector } from '../components/YearSelector';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 
-const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trend, trendLabel }) => (
-  <div className={`rounded-2xl border border-outline-variant p-5 flex flex-col gap-3 bento-hover glass-card`}>
+const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel, isHighlighted = false }) => (
+  <div className={`rounded-2xl border ${isHighlighted ? 'border-tertiary/40 bg-tertiary/5 shadow-md' : 'border-outline-variant'} p-5 flex flex-col justify-between gap-3 bento-hover glass-card relative overflow-hidden`}>
+    {isHighlighted && (
+      <div className="absolute top-0 right-0 bg-tertiary text-on-tertiary text-[10px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
+        Direct + Recoveries
+      </div>
+    )}
     <div className="flex items-center justify-between">
       <span className="font-label-md text-label-md text-on-surface-variant font-medium">{label}</span>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass}`}>
@@ -18,11 +22,11 @@ const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', b
     </div>
     <div>
       <div className={`font-headline-lg text-headline-lg font-bold tracking-tight ${colorClass}`}>{value}</div>
-      {subValue && <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{subValue}</div>}
+      {subValue && <div className="font-label-sm text-label-sm text-on-surface font-semibold mt-1">{subValue}</div>}
     </div>
-    {(trend !== undefined || trendLabel) && (
+    {trendLabel && (
       <div className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant border-t border-outline-variant/40 pt-2">
-        {trendLabel && <span>{trendLabel}</span>}
+        <span>{trendLabel}</span>
       </div>
     )}
   </div>
@@ -42,7 +46,7 @@ const ActivityItem = ({ item }) => {
         <div className="font-label-sm text-[11px] text-on-surface-variant truncate">{item.subtitle} · {formatDate(item.date)}</div>
       </div>
       <div className={`font-label-md text-label-md font-bold flex-shrink-0 ${isCollection ? 'text-tertiary' : 'text-error'}`}>
-        {isCollection ? '+' : '-'}{formatCompactCurrency(item.amount)}
+        {isCollection ? '+' : '-'}{formatCurrency(item.amount)}
       </div>
     </div>
   );
@@ -90,10 +94,11 @@ export const DashboardPage = () => {
     { name: 'Working', value: m.workingCollection || 0, fill: '#9e3d00', count: m.workingCount || 0 },
     { name: 'Student', value: m.studentCollection || 0, fill: '#735c00', count: m.studentCount || 0 },
     { name: 'General', value: m.generalPublicCollection || 0, fill: '#006a35', count: m.generalPublicCount || 0 },
+    { name: 'Recoveries', value: m.totalRecovered || 0, fill: '#008645', count: 'Split' },
   ];
 
   const balanceChartData = [
-    { name: 'Collections', value: m.totalCollection || 0, fill: '#006a35' },
+    { name: 'Total Collection', value: m.totalCollection || 0, fill: '#006a35' },
     { name: 'Expenses', value: m.totalExpenses || 0, fill: '#ba1a1a' },
   ];
 
@@ -129,22 +134,63 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Collection" value={formatCompactCurrency(m.totalCollection)} subValue={`${m.paidContributorsCount || 0} Contributors Paid`} icon="payments" colorClass="text-tertiary" bgClass="bg-tertiary-container/20" trendLabel={`${m.totalContributors || 0} total enrolled`} />
-        <StatCard label="Total Expenses" value={formatCompactCurrency(m.totalExpenses)} subValue="All categories combined" icon="receipt_long" colorClass="text-error" bgClass="bg-error-container/20" />
-        <StatCard label="Event Balance" value={formatCompactCurrency(m.eventBalance)} subValue="Collection minus expenses" icon={balancePositive ? 'trending_up' : 'trending_down'} colorClass={balancePositive ? 'text-tertiary' : 'text-error'} bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'} />
-        <StatCard label="Advance Recovery" value={formatCompactCurrency(m.yetToRecover)} subValue={`₹${(m.totalSplitGiven || 0).toLocaleString('en-IN')} total given`} icon="handshake" colorClass="text-primary" bgClass="bg-primary-container/20" trendLabel={m.yetToRecover > 0 ? `${formatCurrency(m.totalRecovered)} recovered` : 'Fully settled'} />
+      {/* Primary KPI Row - 5 Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* FIRST BOX: Total Collection (Direct Collection + Split Recoveries) */}
+        <StatCard
+          label="Total Collection"
+          value={formatCurrency(m.totalCollection)}
+          subValue={`${formatCurrency(m.directCollection || 0)} (Collection) + ${formatCurrency(m.totalRecovered || 0)} (Recoveries)`}
+          icon="account_balance_wallet"
+          colorClass="text-tertiary font-bold"
+          bgClass="bg-tertiary-container/30"
+          trendLabel="Total Collection (Direct + Recoveries)"
+          isHighlighted={true}
+        />
+        <StatCard
+          label="Direct Collections"
+          value={formatCurrency(m.directCollection)}
+          subValue={`${m.paidContributorsCount || 0} Paid Contributors`}
+          icon="payments"
+          colorClass="text-primary"
+          bgClass="bg-primary-container/20"
+          trendLabel={`${m.totalContributors || 0} Total Enrolled`}
+        />
+        <StatCard
+          label="Split Recoveries"
+          value={formatCurrency(m.totalRecovered)}
+          subValue={`Yet to recover: ${formatCurrency(m.yetToRecover || 0)}`}
+          icon="download_done"
+          colorClass="text-[#008645]"
+          bgClass="bg-[#008645]/10"
+          trendLabel={`Total Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
+        />
+        <StatCard
+          label="Total Expenses"
+          value={formatCurrency(m.totalExpenses)}
+          subValue="All categories combined"
+          icon="receipt_long"
+          colorClass="text-error"
+          bgClass="bg-error-container/20"
+        />
+        <StatCard
+          label="Event Balance"
+          value={formatCurrency(m.eventBalance)}
+          subValue="Total Collection minus Expenses"
+          icon={balancePositive ? 'trending_up' : 'trending_down'}
+          colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
+          bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
+        />
       </div>
 
       {/* Category Breakdown Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
           <div className="flex items-center gap-2 mb-3">
             <span className="material-symbols-outlined text-primary text-xl">work</span>
             <span className="font-label-md text-label-md text-on-surface-variant font-medium">Working People</span>
           </div>
-          <div className="font-headline-lg text-headline-lg-mobile text-primary font-bold">{formatCompactCurrency(m.workingCollection)}</div>
+          <div className="font-headline-lg text-headline-lg-mobile text-primary font-bold">{formatCurrency(m.workingCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.workingCount || 0} contributors enrolled</div>
           <div className="mt-3 bg-surface-container rounded-full h-1.5 overflow-hidden">
             <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.workingCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
@@ -157,7 +203,7 @@ export const DashboardPage = () => {
             <span className="material-symbols-outlined text-secondary text-xl">school</span>
             <span className="font-label-md text-label-md text-on-surface-variant font-medium">School / College</span>
           </div>
-          <div className="font-headline-lg text-headline-lg-mobile text-secondary font-bold">{formatCompactCurrency(m.studentCollection)}</div>
+          <div className="font-headline-lg text-headline-lg-mobile text-secondary font-bold">{formatCurrency(m.studentCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.studentCount || 0} students enrolled</div>
           <div className="mt-3 bg-surface-container rounded-full h-1.5 overflow-hidden">
             <div className="bg-secondary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.studentCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
@@ -170,12 +216,25 @@ export const DashboardPage = () => {
             <span className="material-symbols-outlined text-tertiary text-xl">people</span>
             <span className="font-label-md text-label-md text-on-surface-variant font-medium">General Public</span>
           </div>
-          <div className="font-headline-lg text-headline-lg-mobile text-tertiary font-bold">{formatCompactCurrency(m.generalPublicCollection)}</div>
+          <div className="font-headline-lg text-headline-lg-mobile text-tertiary font-bold">{formatCurrency(m.generalPublicCollection)}</div>
           <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">{m.generalPublicCount || 0} voluntary contributors</div>
           <div className="mt-3 bg-surface-container rounded-full h-1.5 overflow-hidden">
             <div className="bg-tertiary h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.generalPublicCollection / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
           </div>
           <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.generalPublicCollection / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
+        </div>
+
+        <div className="bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-[#008645] text-xl">download_done</span>
+            <span className="font-label-md text-label-md text-on-surface-variant font-medium">Split Recoveries</span>
+          </div>
+          <div className="font-headline-lg text-headline-lg-mobile text-[#008645] font-bold">{formatCurrency(m.totalRecovered)}</div>
+          <div className="font-label-sm text-label-sm text-on-surface-variant mt-1">From advance settlements</div>
+          <div className="mt-3 bg-surface-container rounded-full h-1.5 overflow-hidden">
+            <div className="bg-[#008645] h-full rounded-full transition-all" style={{ width: `${m.totalCollection > 0 ? ((m.totalRecovered / m.totalCollection) * 100).toFixed(0) : 0}%` }} />
+          </div>
+          <div className="font-label-sm text-[11px] text-on-surface-variant mt-1">{m.totalCollection > 0 ? ((m.totalRecovered / m.totalCollection) * 100).toFixed(1) : 0}% of total</div>
         </div>
       </div>
 
@@ -206,7 +265,7 @@ export const DashboardPage = () => {
         <div className="bg-surface border border-outline-variant rounded-2xl p-5 glass-card">
           <h2 className="font-title-md text-title-md text-on-background font-bold mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-secondary text-xl">pie_chart</span>
-            By Category
+            By Source
           </h2>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -225,7 +284,7 @@ export const DashboardPage = () => {
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.fill }} />
                   <span className="font-label-sm text-label-sm text-on-surface-variant">{item.name} ({item.count})</span>
                 </div>
-                <span className="font-label-sm text-label-sm font-bold text-on-background">{formatCompactCurrency(item.value)}</span>
+                <span className="font-label-sm text-label-sm font-bold text-on-background">{formatCurrency(item.value)}</span>
               </div>
             ))}
           </div>

@@ -3,6 +3,11 @@ export const formatCurrency = (amount) => {
   return `₹${Number(amount).toLocaleString('en-IN')}`;
 };
 
+export const formatPdfCurrency = (amount) => {
+  if (amount === undefined || amount === null || isNaN(amount)) return 'Rs. 0';
+  return `Rs. ${Number(amount).toLocaleString('en-IN')}`;
+};
+
 export const formatCompactCurrency = (amount) => {
   if (amount === undefined || amount === null || isNaN(amount)) return '₹0';
   const val = Number(amount);

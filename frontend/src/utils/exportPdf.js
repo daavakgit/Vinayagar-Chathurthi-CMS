@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { formatCurrency, formatDate, getCategoryLabel } from './formatters.js';
+import { formatPdfCurrency, formatDate, getCategoryLabel } from './formatters.js';
 
 export const exportReportToPDF = ({
   eventName = 'Vinayagar Chathurthi',
@@ -42,11 +42,11 @@ export const exportReportToPDF = ({
 
     doc.setFontSize(13);
     doc.setTextColor(0, 106, 53); // Green for collection
-    doc.text(formatCurrency(totalCollection), 20, currentY + 18);
+    doc.text(formatPdfCurrency(totalCollection), 20, currentY + 18);
     doc.setTextColor(186, 26, 26); // Red for expenses
-    doc.text(formatCurrency(totalExpenses), 80, currentY + 18);
+    doc.text(formatPdfCurrency(totalExpenses), 80, currentY + 18);
     doc.setTextColor(158, 61, 0); // Primary for balance
-    doc.text(formatCurrency(netBalance), 140, currentY + 18);
+    doc.text(formatPdfCurrency(netBalance), 140, currentY + 18);
 
     currentY += 32;
   }
@@ -64,8 +64,8 @@ export const exportReportToPDF = ({
       c.name,
       c.phone || '-',
       getCategoryLabel(c.category),
-      c.expectedAmount ? formatCurrency(c.expectedAmount) : '-',
-      formatCurrency(c.actualAmount),
+      c.expectedAmount ? formatPdfCurrency(c.expectedAmount) : '-',
+      formatPdfCurrency(c.actualAmount),
       c.paymentStatus,
       formatDate(c.date),
     ]);
@@ -98,7 +98,7 @@ export const exportReportToPDF = ({
       i + 1,
       e.expenseName,
       e.category,
-      formatCurrency(e.amount),
+      formatPdfCurrency(e.amount),
       formatDate(e.date),
       e.description || '-',
     ]);
@@ -130,9 +130,9 @@ export const exportReportToPDF = ({
     const splitRows = splits.map((s, i) => [
       i + 1,
       s.personName,
-      formatCurrency(s.amountGiven),
-      formatCurrency(s.totalRecovered || 0),
-      formatCurrency(s.remaining || 0),
+      formatPdfCurrency(s.amountGiven),
+      formatPdfCurrency(s.totalRecovered || 0),
+      formatPdfCurrency(s.remaining || 0),
       s.status || 'Pending',
       s.purpose,
       formatDate(s.dateGiven),
