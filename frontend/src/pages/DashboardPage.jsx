@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 
 const StatCard = ({ label, value, subValue, icon, colorClass = 'text-primary', bgClass = 'bg-surface-container-low', trendLabel }) => (
-  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col gap-3 bento-hover glass-card">
+  <div className="rounded-2xl border border-outline-variant p-5 flex flex-col justify-between gap-3 bento-hover glass-card relative overflow-hidden">
     <div className="flex items-center justify-between">
       <span className="font-label-md text-label-md text-on-surface-variant font-medium">{label}</span>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgClass}`}>
@@ -129,16 +129,30 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Primary KPI Row - Original 4 Cards UI Layout */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Primary KPI Row - 5 Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* 1. Total Collection (Direct + Recoveries) */}
         <StatCard
           label="Total Collection"
           value={formatCurrency(m.totalCollection)}
+          subValue="Direct Collections + Recoveries"
+          icon="account_balance_wallet"
+          colorClass="text-tertiary font-bold"
+          bgClass="bg-tertiary-container/30"
+        />
+
+        {/* 2. Collections Amount (Direct Donor Collections) */}
+        <StatCard
+          label="Collections Amount"
+          value={formatCurrency(m.directCollection)}
           subValue={`${m.paidContributorsCount || 0} Paid Contributors`}
           icon="payments"
-          colorClass="text-tertiary"
-          bgClass="bg-tertiary-container/20"
+          colorClass="text-primary font-bold"
+          bgClass="bg-primary-container/20"
+          trendLabel={`${m.totalContributors || 0} Total Enrolled`}
         />
+
+        {/* 3. Total Expenses */}
         <StatCard
           label="Total Expenses"
           value={formatCurrency(m.totalExpenses)}
@@ -147,6 +161,8 @@ export const DashboardPage = () => {
           colorClass="text-error"
           bgClass="bg-error-container/20"
         />
+
+        {/* 4. Event Balance */}
         <StatCard
           label="Event Balance"
           value={formatCurrency(m.eventBalance)}
@@ -155,13 +171,15 @@ export const DashboardPage = () => {
           colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
           bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
         />
+
+        {/* 5. Split Recoveries */}
         <StatCard
           label="Split Recoveries"
           value={formatCurrency(m.totalRecovered)}
           subValue={`Yet to recover: ${formatCurrency(m.yetToRecover || 0)}`}
           icon="download_done"
-          colorClass="text-primary"
-          bgClass="bg-primary-container/20"
+          colorClass="text-[#008645]"
+          bgClass="bg-[#008645]/10"
           trendLabel={`Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
         />
       </div>
