@@ -74,7 +74,7 @@ export const DashboardPage = () => {
   const [error, setError] = useState('');
 
   // Active Modal State
-  const [activeModal, setActiveModal] = useState(null); // 'total' | 'collections' | 'expenses' | 'splits' | 'working' | 'student'
+  const [activeModal, setActiveModal] = useState(null); // 'total' | 'collections' | 'expenses' | 'splits' | 'working' | 'student' | 'general_public' | 'balance'
   const [collectionsList, setCollectionsList] = useState([]);
   const [expensesList, setExpensesList] = useState([]);
   const [splitsList, setSplitsList] = useState([]);
@@ -95,25 +95,27 @@ export const DashboardPage = () => {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-  // Open Modal Handler with Instant Metric Display & Non-blocking List Fetch
+  // Open Modal Handler with Exact Category Filtering
   const openModal = async (type) => {
     setActiveModal(type);
     setModalLoading(true);
     try {
-      if (type === 'collections' || type === 'working' || type === 'student') {
-        const categoryParam = type === 'working' ? 'working' : type === 'student' ? 'student' : 'all';
+      if (['collections', 'working', 'student', 'general_public'].includes(type)) {
+        const categoryParam = ['working', 'student', 'general_public'].includes(type) ? type : 'all';
         const res = await getCollectionsApi({ year: selectedYear, category: categoryParam });
         if (res?.success) setCollectionsList(res.data || []);
       } else if (type === 'expenses') {
         const res = await getExpensesApi({ year: selectedYear });
         if (res?.success) setExpensesList(res.data || []);
-      } else if (type === 'splits' || type === 'total') {
-        const [collectionsRes, splitsRes] = await Promise.all([
+      } else if (type === 'splits' || type === 'total' || type === 'balance') {
+        const [collectionsRes, splitsRes, expensesRes] = await Promise.all([
           getCollectionsApi({ year: selectedYear }),
           getSplitsApi({ year: selectedYear }),
+          getExpensesApi({ year: selectedYear }),
         ]);
         if (collectionsRes?.success) setCollectionsList(collectionsRes.data || []);
         if (splitsRes?.success) setSplitsList(splitsRes.data || []);
+        if (expensesRes?.success) setExpensesList(expensesRes.data || []);
       }
     } catch (err) {
       console.error('Non-critical background modal fetch notice:', err);
@@ -222,7 +224,7 @@ export const DashboardPage = () => {
           tooltipText="Click to view all expense item details"
         />
 
-        {/* 4. Click Event Balance */}
+        {/* 4. Click Event Balance -> Opens Dedicated Event Balance Modal */}
         <StatCard
           label="Event Balance"
           value={formatCurrency(m.eventBalance)}
@@ -230,8 +232,8 @@ export const DashboardPage = () => {
           icon={balancePositive ? 'trending_up' : 'trending_down'}
           colorClass={balancePositive ? 'text-tertiary' : 'text-error'}
           bgClass={balancePositive ? 'bg-tertiary-container/20' : 'bg-error-container/20'}
-          onClick={() => openModal('total')}
-          tooltipText="Click to view event balance summary"
+          onClick={() => openModal('balance')}
+          tooltipText="Click to view Event Net Balance calculation and surplus details"
         />
 
         {/* 5. Click Split Recoveries -> Opens Split Modal */}
@@ -295,7 +297,7 @@ export const DashboardPage = () => {
         {/* General Public Card */}
         <button
           type="button"
-          onClick={() => openModal('collections')}
+          onClick={() => openModal('general_public')}
           className="w-full text-left bg-surface border border-outline-variant rounded-2xl p-4 bento-hover glass-card cursor-pointer hover:border-tertiary transition-all group"
         >
           <div className="flex items-center justify-between mb-3">
@@ -386,7 +388,7 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* MODAL 1: TOTAL COLLECTION BREAKDOWN (100% Reliable, never blank) */}
+      {/* MODAL 1: TOTAL COLLECTION BREAKDOWN */}
       <ModalWrapper
         isOpen={activeModal === 'total'}
         onClose={() => setActiveModal(null)}
@@ -641,6 +643,122 @@ export const DashboardPage = () => {
             ))}
           </div>
         )}
+      </ModalWrapper>
+
+      {/* MODAL 7: GENERAL PUBLIC */}
+      <ModalWrapper
+        isOpen={activeModal === 'general_public'}
+        onClose={() => setActiveModal(null)}
+        title="General Public Voluntary Contributions"
+        icon="people"
+        iconColor="text-tertiary"
+      >
+        <div className="bg-tertiary-container/20 p-3.5 rounded-xl border border-tertiary/20 flex items-center justify-between">
+          <div>
+            <div className="font-label-sm text-on-surface-variant">General Public Voluntary Collection</div>
+            <div className="font-headline-sm text-tertiary font-bold">{formatCurrency(m.generalPublicCollection)}</div>
+          </div>
+          <div className="text-right font-label-md font-bold text-on-background">{m.generalPublicCount || 0} Voluntary Contributors</div>
+        </div>
+
+        {modalLoading && (collectionsList || []).length === 0 ? (
+          <LoadingSpinner label="Loading general public records..." />
+        ) : (collectionsList || []).length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No general public voluntary records for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {(collectionsList || []).map((c) => (
+              <div key={c._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-label-md font-bold text-on-background">{c.name}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{c.phone || 'No Phone'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-label-md font-bold text-tertiary">{formatCurrency(c.actualAmount)}</div>
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.paymentStatus === 'Received' ? 'bg-tertiary-container/40 text-tertiary' : 'bg-error-container/30 text-error'}`}>
+                    {c.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ModalWrapper>
+
+      {/* MODAL 8: DEDICATED EVENT BALANCE SUMMARY */}
+      <ModalWrapper
+        isOpen={activeModal === 'balance'}
+        onClose={() => setActiveModal(null)}
+        title="Event Net Balance Financial Summary"
+        icon={balancePositive ? 'trending_up' : 'trending_down'}
+        iconColor={balancePositive ? 'text-tertiary' : 'text-error'}
+      >
+        {/* Net Formula Card */}
+        <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 ${
+          balancePositive ? 'bg-tertiary-container/20 border-tertiary/30' : 'bg-error-container/20 border-error/30'
+        }`}>
+          <div>
+            <div className="font-label-sm text-on-surface-variant">Net Event Surplus / Balance</div>
+            <div className={`font-headline-lg text-2xl font-black mt-1 ${balancePositive ? 'text-tertiary' : 'text-error'}`}>
+              {formatCurrency(m.eventBalance)}
+            </div>
+            <div className="font-label-sm text-xs text-on-surface-variant mt-1">
+              {balancePositive ? '✓ Event operations are in positive surplus' : '⚠️ Expenses exceed total collections'}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-sm font-bold bg-surface p-3 rounded-lg border border-outline-variant">
+            <span className="text-tertiary">{formatCurrency(m.totalCollection)}</span>
+            <span className="text-on-surface-variant">-</span>
+            <span className="text-error">{formatCurrency(m.totalExpenses)}</span>
+            <span className="text-on-surface-variant">=</span>
+            <span className={balancePositive ? 'text-tertiary' : 'text-error'}>{formatCurrency(m.eventBalance)}</span>
+          </div>
+        </div>
+
+        {/* Inflow vs Outflow Breakdown Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Total Inflow Box */}
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-2">
+            <div className="flex items-center justify-between border-b border-outline-variant/60 pb-2">
+              <span className="font-title-sm font-bold text-on-background flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-tertiary text-lg">add_circle</span>
+                Total Inflow
+              </span>
+              <span className="font-title-md font-bold text-tertiary">{formatCurrency(m.totalCollection)}</span>
+            </div>
+            <div className="space-y-1.5 text-xs text-on-surface-variant">
+              <div className="flex justify-between">
+                <span>Collections Amount:</span>
+                <span className="font-bold text-on-background">{formatCurrency(m.directCollection)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Split Recoveries:</span>
+                <span className="font-bold text-[#008645]">{formatCurrency(m.totalRecovered)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Outflow Box */}
+          <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-2">
+            <div className="flex items-center justify-between border-b border-outline-variant/60 pb-2">
+              <span className="font-title-sm font-bold text-on-background flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-error text-lg">remove_circle</span>
+                Total Outflow
+              </span>
+              <span className="font-title-md font-bold text-error">{formatCurrency(m.totalExpenses)}</span>
+            </div>
+            <div className="space-y-1.5 text-xs text-on-surface-variant">
+              <div className="flex justify-between">
+                <span>All Event Expenses:</span>
+                <span className="font-bold text-error">{formatCurrency(m.totalExpenses)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Expense Categories:</span>
+                <span className="font-bold text-on-background">All Combined</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </ModalWrapper>
     </div>
   );
