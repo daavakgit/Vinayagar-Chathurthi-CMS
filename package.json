@@ -1,0 +1,14 @@
+{
+  "name": "vcms",
+  "version": "1.0.0",
+  "description": "Vinayagar Chathurthi Collection & Expense Management System",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npx vite\" --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npx vite",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
