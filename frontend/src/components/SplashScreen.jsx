@@ -6,15 +6,15 @@ export const SplashScreen = () => {
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    // 1. Hold full opacity for 1500ms, then trigger 500ms fade-out (total 2000ms)
+    // 1. Hold full opacity for 2500ms, then trigger 500ms fade-out (total 3000ms)
     const fadeTimer = setTimeout(() => {
       setFadingOut(true);
-    }, 1500);
+    }, 2500);
 
-    // 2. Navigate to existing portal/login page at exact 2000ms mark
+    // 2. Navigate to existing portal/login page at exact 3000ms mark
     const navTimer = setTimeout(() => {
       navigate('/portal', { replace: true });
-    }, 2000);
+    }, 3000);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -24,9 +24,8 @@ export const SplashScreen = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#1E1B4B] to-[#0F172A] text-white px-4 select-none transition-opacity duration-500 ease-in-out ${
-        fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#1E1B4B] to-[#0F172A] text-white px-4 select-none transition-opacity duration-500 ease-in-out ${fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
     >
       {/* Background Devotional Soft Radial Glow */}
       <div className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-amber-500/20 via-orange-500/25 to-yellow-400/20 blur-3xl animate-pulse pointer-events-none" />
