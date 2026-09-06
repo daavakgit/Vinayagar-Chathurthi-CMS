@@ -44,3 +44,38 @@
   box-shadow: 0px 12px 32px rgba(211, 84, 0, 0.08);
   border-color: #9e3d00;
 }
+
+@keyframes splashProgress {
+  0% {
+    width: 0%;
+    opacity: 0.4;
+  }
+  50% {
+    width: 70%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+.animate-splash-progress {
+  animation: splashProgress 2s ease-in-out forwards;
+}
+
+@keyframes splashFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-splash-fade-in {
+  animation: splashFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

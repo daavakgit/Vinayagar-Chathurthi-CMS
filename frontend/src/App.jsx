@@ -15,6 +15,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 // New Public & User Components
+import { SplashScreen } from './components/SplashScreen';
 import { LandingPage } from './pages/LandingPage';
 import { PortalEntryPage } from './pages/PortalEntryPage';
 import { UserLayout } from './pages/user/UserLayout';
@@ -63,10 +64,13 @@ function App() {
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
-          {/* Public Landing Page */}
-          <Route path="/" element={<LandingPage />} />
+          {/* Initial Entry Experience: Vinayagar Splash Screen (2000ms -> /portal) */}
+          <Route path="/" element={<SplashScreen />} />
 
-          {/* Portal Selector Entry Page */}
+          {/* Existing Public Landing Page */}
+          <Route path="/landing" element={<LandingPage />} />
+
+          {/* Portal Selector & Existing Admin Login Entry Page */}
           <Route path="/portal" element={<PortalEntryPage />} />
 
           {/* User Portal Experience (View-Only) */}
