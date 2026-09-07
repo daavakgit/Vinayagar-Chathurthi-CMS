@@ -4,7 +4,7 @@ import Settings from '../models/Settings.js';
 // GET /api/collections
 export const getCollections = async (req, res) => {
   try {
-    const { year, category, search, paymentStatus, startDate, endDate } = req.query;
+    const { year, category, search, paymentStatus, startDate, endDate, limit } = req.query;
 
     const filter = {};
 
@@ -34,9 +34,14 @@ export const getCollections = async (req, res) => {
       if (endDate) filter.date.$lte = new Date(endDate);
     }
 
-    const collections = await Collection.find(filter).sort({ date: -1, createdAt: -1 });
+    let query = Collection.find(filter).sort({ date: -1, createdAt: -1 }).lean();
+    if (limit) {
+      query = query.limit(Number(limit));
+    }
 
-    // Calculate aggregated metrics for this filtered set
+    const collections = await query;
+
+    // Calculate aggregated metrics for this set
     const totalActualReceived = collections
       .filter((c) => c.paymentStatus === 'Received')
       .reduce((sum, c) => sum + (c.actualAmount || 0), 0);

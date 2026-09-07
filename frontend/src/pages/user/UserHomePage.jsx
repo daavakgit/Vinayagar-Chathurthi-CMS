@@ -2,16 +2,66 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../../context/YearContext';
 import { getDashboardApi, getCollectionsApi, getExpensesApi, getSettingsApi } from '../../services/api';
 import { formatCurrency, formatDate, getCategoryLabel } from '../../utils/formatters';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { QrPaymentModal } from '../../components/QrPaymentModal';
+
+const SummarySkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="bg-surface-container-low border border-outline-variant/60 p-6 rounded-3xl h-32" />
+    <div className="bg-surface-container-low border border-outline-variant/60 p-5 rounded-2xl h-24" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="bg-surface-container-low border border-outline-variant/60 p-5 rounded-2xl h-28" />
+      ))}
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-surface-container-low border border-outline-variant/60 rounded-2xl p-5 h-64" />
+      <div className="bg-surface-container-low border border-outline-variant/60 rounded-2xl p-5 h-64" />
+    </div>
+  </div>
+);
 
 export const UserHomePage = () => {
   const { selectedYear } = useYear();
-  const [metrics, setMetrics] = useState(null);
-  const [collections, setCollections] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `vcm_summary_cache_${selectedYear}`;
+
+  // Try reading from cache immediately for 0ms load
+  const [metrics, setMetrics] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_metrics`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [collections, setCollections] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_collections`);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_expenses`);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [settings, setSettings] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_settings`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(!metrics);
   const [showQrModal, setShowQrModal] = useState(false);
 
   const handleDownloadQr = (e) => {
@@ -26,31 +76,40 @@ export const UserHomePage = () => {
 
   const loadHomeData = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!metrics) setLoading(true);
       const [dashRes, colRes, expRes, setRes] = await Promise.all([
         getDashboardApi(selectedYear),
         getCollectionsApi({ year: selectedYear, limit: 5 }),
         getExpensesApi({ year: selectedYear, limit: 5 }),
         getSettingsApi(),
       ]);
-      if (dashRes?.success) setMetrics(dashRes.data);
-      if (colRes?.success) setCollections(colRes.data || []);
-      if (expRes?.success) setExpenses(expRes.data || []);
-      if (setRes?.success) setSettings(setRes.data);
+
+      if (dashRes?.success) {
+        setMetrics(dashRes.data);
+        sessionStorage.setItem(`${cacheKey}_metrics`, JSON.stringify(dashRes.data));
+      }
+      if (colRes?.success) {
+        setCollections(colRes.data || []);
+        sessionStorage.setItem(`${cacheKey}_collections`, JSON.stringify(colRes.data || []));
+      }
+      if (expRes?.success) {
+        setExpenses(expRes.data || []);
+        sessionStorage.setItem(`${cacheKey}_expenses`, JSON.stringify(expRes.data || []));
+      }
+      if (setRes?.success) {
+        setSettings(setRes.data);
+        sessionStorage.setItem(`${cacheKey}_settings`, JSON.stringify(setRes.data));
+      }
     } catch (err) {
       console.error('Error loading User Home data:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear]);
+  }, [selectedYear, cacheKey, metrics]);
 
-  useEffect(() => { loadHomeData(); }, [loadHomeData]);
+  useEffect(() => { loadHomeData(); }, [selectedYear]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <LoadingSpinner label="Loading festival summary..." />
-    </div>
-  );
+  if (loading && !metrics) return <SummarySkeleton />;
 
   const m = metrics || {};
   const s = settings || {};

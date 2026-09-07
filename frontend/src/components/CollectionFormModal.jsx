@@ -30,7 +30,7 @@ export const CollectionFormModal = ({
         name: initialData.name || '',
         phone: initialData.phone || '',
         category: initialData.category || 'working',
-        expectedAmount: initialData.expectedAmount !== null ? initialData.expectedAmount : '',
+        expectedAmount: initialData.expectedAmount !== null && initialData.expectedAmount !== undefined ? initialData.expectedAmount : '',
         actualAmount: initialData.actualAmount || '',
         paymentStatus: initialData.paymentStatus || 'Received',
         date: initialData.date ? new Date(initialData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
@@ -101,185 +101,195 @@ export const CollectionFormModal = ({
 
   if (!isOpen) return null;
 
+  const workingDefault = currentSetting ? currentSetting.workingDefaultAmount : 2000;
+  const studentDefault = currentSetting ? currentSetting.studentDefaultAmount : 500;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-background/40 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-surface border border-outline-variant rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center pb-3 border-b border-outline-variant">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-2xl">
-              {initialData ? 'edit_note' : 'add_card'}
-            </span>
-            <h3 className="font-title-md text-title-md text-on-background font-bold">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-surface border border-outline-variant rounded-2xl max-w-lg w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-outline-variant bg-surface-container-low/80 flex-shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+            <div className="w-9 h-9 rounded-xl bg-primary-container/30 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-primary text-xl">
+                {initialData ? 'edit_note' : 'add_card'}
+              </span>
+            </div>
+            <h3 className="font-title-md text-base sm:text-lg text-on-background font-bold truncate">
               {initialData ? 'Edit Collection Record' : `New Collection (${selectedYear})`}
             </h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"
+            className="w-9 h-9 rounded-xl hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors flex-shrink-0"
+            aria-label="Close"
           >
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
         </div>
 
-        {errorMsg && (
-          <div className="bg-error-container/60 border border-error/30 text-on-error-container p-3 rounded-lg font-label-md text-label-md flex items-center gap-2">
-            <span className="material-symbols-outlined text-xl">error</span>
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Contributor Name */}
-          <div>
-            <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-              Contributor Name <span className="text-error">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Anbu Selvan"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          {/* Phone Number */}
-          <div>
-            <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-              Phone Number <span className="text-on-surface-variant text-xs">(Optional)</span>
-            </label>
-            <input
-              type="tel"
-              placeholder="e.g. 9876543210"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-              Category <span className="text-error">*</span>
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none"
-            >
-              <option value="working">
-                Working People (Year Default: ₹{currentSetting ? currentSetting.workingDefaultAmount : 2000})
-              </option>
-              <option value="student">
-                School / College Student (Year Default: ₹{currentSetting ? currentSetting.studentDefaultAmount : 500})
-              </option>
-              <option value="general_public">General Public (Voluntary Contribution)</option>
-            </select>
-          </div>
-
-          {/* Amounts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Expected Amount */}
-            <div>
-              <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-                Expected Amount (₹)
-                {formData.category === 'general_public' && (
-                  <span className="text-on-surface-variant text-xs font-normal ml-1">(N/A)</span>
-                )}
-              </label>
-              <input
-                type="number"
-                disabled={formData.category === 'general_public'}
-                placeholder={formData.category === 'general_public' ? 'N/A' : '2000'}
-                value={formData.expectedAmount}
-                onChange={(e) => setFormData({ ...formData, expectedAmount: e.target.value })}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none disabled:opacity-50 disabled:bg-surface-container-high"
-              />
+        {/* Modal Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+          {errorMsg && (
+            <div className="bg-error-container/60 border border-error/30 text-on-error-container p-3 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg flex-shrink-0">error</span>
+              <span>{errorMsg}</span>
             </div>
+          )}
 
-            {/* Actual Amount Received */}
+          <form id="collection-form" onSubmit={handleSubmit} className="space-y-4">
+            {/* Contributor Name */}
             <div>
-              <label className="block font-label-md text-label-md text-on-background font-bold mb-1">
-                Actual Amount Received (₹) <span className="text-error">*</span>
+              <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                Contributor Name <span className="text-error">*</span>
               </label>
               <input
-                type="number"
+                type="text"
                 required
-                min="1"
-                placeholder="Amount paid"
-                value={formData.actualAmount}
-                onChange={(e) => setFormData({ ...formData, actualAmount: e.target.value })}
-                className="w-full bg-surface-container-lowest border-2 border-primary rounded-lg px-3 py-2 font-body-md text-body-md text-primary font-bold focus:ring-2 focus:ring-primary focus:outline-none"
+                placeholder="e.g. Anbu Selvan"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px]"
               />
-              <p className="font-label-sm text-[11px] text-on-surface-variant mt-1">
-                Amount received for event metrics
-              </p>
             </div>
-          </div>
 
-          {/* Payment Status & Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Phone Number */}
             <div>
-              <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-                Payment Status
+              <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                Phone Number <span className="text-on-surface-variant text-xs font-normal">(Optional)</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="tel"
+                placeholder="e.g. 9876543210"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px]"
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                Category <span className="text-error">*</span>
               </label>
               <select
-                value={formData.paymentStatus}
-                onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none"
+                value={formData.category}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px] truncate"
               >
-                <option value="Received">Received (Paid)</option>
-                <option value="Pending">Pending (Pledged)</option>
+                <option value="working">Working People (Default: ₹{workingDefault})</option>
+                <option value="student">School / College (Default: ₹{studentDefault})</option>
+                <option value="general_public">General Public (Voluntary)</option>
               </select>
             </div>
 
+            {/* Amounts Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {/* Expected Amount */}
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                  Expected Amount (₹)
+                  {formData.category === 'general_public' && (
+                    <span className="text-on-surface-variant text-xs font-normal ml-1">(N/A)</span>
+                  )}
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  disabled={formData.category === 'general_public'}
+                  placeholder={formData.category === 'general_public' ? 'N/A' : '2000'}
+                  value={formData.expectedAmount}
+                  onChange={(e) => setFormData({ ...formData, expectedAmount: e.target.value })}
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none disabled:opacity-50 disabled:bg-surface-container-high min-h-[46px]"
+                />
+              </div>
+
+              {/* Actual Amount Received */}
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-primary mb-1.5">
+                  Actual Received (₹) <span className="text-error">*</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  required
+                  min="1"
+                  placeholder="Amount paid"
+                  value={formData.actualAmount}
+                  onChange={(e) => setFormData({ ...formData, actualAmount: e.target.value })}
+                  className="w-full bg-surface-container-lowest border-2 border-primary rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-primary font-bold focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px]"
+                />
+              </div>
+            </div>
+
+            {/* Payment Status & Date */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                  Payment Status
+                </label>
+                <select
+                  value={formData.paymentStatus}
+                  onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px]"
+                >
+                  <option value="Received">Received (Paid)</option>
+                  <option value="Pending">Pending (Pledged)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                  Collection Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none min-h-[46px]"
+                />
+              </div>
+            </div>
+
+            {/* Notes */}
             <div>
-              <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-                Collection Date
+              <label className="block text-xs sm:text-sm font-semibold text-on-background mb-1.5">
+                Notes / Receipt Details
               </label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none"
+              <textarea
+                rows="2"
+                placeholder="Add optional payment details or notes..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-on-background focus:ring-2 focus:ring-primary focus:outline-none resize-none"
               />
             </div>
-          </div>
+          </form>
+        </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block font-label-md text-label-md text-on-background font-medium mb-1">
-              Notes / Receipt Details
-            </label>
-            <textarea
-              rows="2"
-              placeholder="Add optional payment details or notes..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-background focus:ring-2 focus:ring-primary focus:outline-none resize-none"
-            ></textarea>
-          </div>
-
-          {/* Submit Action Buttons */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-outline-variant">
+        {/* Modal Footer / Action Buttons */}
+        <div className="p-4 sm:p-5 border-t border-outline-variant bg-surface-container-low/50 flex-shrink-0">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors"
+              className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl border border-outline-variant text-on-surface-variant font-label-md text-sm font-semibold hover:bg-surface-container transition-colors min-h-[44px] flex items-center justify-center"
             >
               Cancel
             </button>
             <button
               type="submit"
+              form="collection-form"
               disabled={isSubmitting}
-              className="px-6 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-bold hover:bg-primary-container shadow-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-sm font-bold shadow-md hover:bg-primary-container active:scale-95 transition-all disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2"
             >
-              {isSubmitting && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+              {isSubmitting && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               <span>{initialData ? 'Update Collection' : 'Save Collection'}</span>
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import Expense from '../models/Expense.js';
 // GET /api/expenses
 export const getExpenses = async (req, res) => {
   try {
-    const { year, category, search, startDate, endDate } = req.query;
+    const { year, category, search, startDate, endDate, limit } = req.query;
 
     const filter = {};
 
@@ -29,7 +29,12 @@ export const getExpenses = async (req, res) => {
       if (endDate) filter.date.$lte = new Date(endDate);
     }
 
-    const expenses = await Expense.find(filter).sort({ date: -1, createdAt: -1 });
+    let query = Expense.find(filter).sort({ date: -1, createdAt: -1 }).lean();
+    if (limit) {
+      query = query.limit(Number(limit));
+    }
+
+    const expenses = await query;
 
     const totalExpenseAmount = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     const count = expenses.length;

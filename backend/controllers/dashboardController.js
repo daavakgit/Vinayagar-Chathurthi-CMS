@@ -9,11 +9,13 @@ export const getDashboardMetrics = async (req, res) => {
   try {
     const yearParam = req.query.year ? Number(req.query.year) : 2026;
 
-    // Fetch year settings to ensure default amounts are retrieved
-    const yearSetting = await Settings.findOne({ year: yearParam });
-
-    // 1. Collections for selected year
-    const collections = await Collection.find({ year: yearParam });
+    // Execute database queries in parallel with lean() for top speed
+    const [yearSetting, collections, expenses, splits] = await Promise.all([
+      Settings.findOne({ year: yearParam }).lean(),
+      Collection.find({ year: yearParam }).sort({ date: -1, createdAt: -1 }).lean(),
+      Expense.find({ year: yearParam }).sort({ date: -1, createdAt: -1 }).lean(),
+      Split.find({ year: yearParam }).lean(),
+    ]);
 
     const totalContributors = collections.length;
     const paidContributorsCount = collections.filter(
@@ -46,20 +48,17 @@ export const getDashboardMetrics = async (req, res) => {
     const directCollection = workingCollection + studentCollection + generalPublicCollection;
 
     // 2. Expenses for selected year
-    const expenses = await Expense.find({ year: yearParam });
     const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
     // 3. Split / Recovery calculations for selected year
-    const splits = await Split.find({ year: yearParam });
     const splitIds = splits.map((s) => s._id);
-    const recoveries = await Recovery.find({ splitId: { $in: splitIds } });
+    const recoveries = await Recovery.find({ splitId: { $in: splitIds } }).lean();
 
     const totalSplitGiven = splits.reduce((sum, s) => sum + Number(s.amountGiven || 0), 0);
     const totalRecovered = recoveries.reduce((sum, r) => sum + Number(r.amount || 0), 0);
     const yetToRecover = Math.max(0, totalSplitGiven - totalRecovered);
 
     // 4. Combined Total Collection & Event Balance
-    // Total Collection = Direct Collections + Split Recoveries (e.g. 9000 + 8000 = 17000)
     const totalCollection = directCollection + totalRecovered;
     const eventBalance = totalCollection - totalExpenses;
 
@@ -67,7 +66,7 @@ export const getDashboardMetrics = async (req, res) => {
     const recentCollections = collections.slice(0, 5).map((c) => ({
       id: c._id,
       title: c.name,
-      subtitle: `Collection (${c.category.replace('_', ' ')})`,
+      subtitle: `Collection (${c.category ? c.category.replace('_', ' ') : 'direct'})`,
       amount: Number(c.actualAmount || 0),
       type: 'collection',
       date: c.date,

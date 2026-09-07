@@ -149,10 +149,10 @@ export const CollectionsPage = () => {
         </div>
         <button
           onClick={() => { setEditData(null); setModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-bold shadow-sm hover:bg-primary-container transition-all active:scale-95"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-bold shadow-md hover:bg-primary-container transition-all active:scale-95 min-h-[46px]"
         >
           <span className="material-symbols-outlined text-xl">add</span>
-          Add Collection
+          <span>Add Collection</span>
         </button>
       </div>
 
