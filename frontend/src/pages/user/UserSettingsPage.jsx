@@ -77,7 +77,7 @@ export const UserSettingsPage = () => {
               <div className="space-y-1">
                 <span className="text-on-surface-variant font-semibold">Venue / Location</span>
                 <div className="p-3 rounded-xl bg-surface-container font-bold text-on-background">
-                  {s.venue || 'PeriyaParusePalayam'}
+                  {s.venue || 'PeriyaParusePalayam Mari Amman Temple Ground'}
                 </div>
               </div>
 
