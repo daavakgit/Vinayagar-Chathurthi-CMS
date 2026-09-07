@@ -1,10 +1,17 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useYear } from '../../context/YearContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const UserSidebar = () => {
   const { selectedYear } = useYear();
+  const { logoutAdmin } = useAuth();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/login');
+  };
 
   const navItems = [
     { label: 'Home', path: '/portal/home', icon: 'home' },
@@ -76,7 +83,7 @@ export const UserSidebar = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
           className="w-full py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-primary hover:bg-surface-container text-xs font-label-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           title="Admin Login / Access"
         >

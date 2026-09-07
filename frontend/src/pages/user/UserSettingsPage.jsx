@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSettingsApi } from '../../services/api';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
+  const { logoutAdmin } = useAuth();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/login');
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -37,7 +44,7 @@ export const UserSettingsPage = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
           className="px-4 py-2 rounded-xl bg-surface border border-outline-variant text-on-surface hover:text-primary hover:border-primary text-xs font-label-md transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
           title="Admin Login Page"
         >

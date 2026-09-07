@@ -1,9 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { YearSelector } from '../YearSelector';
+import { useAuth } from '../../context/AuthContext';
 
 export const UserHeader = () => {
   const navigate = useNavigate();
+  const { logoutAdmin } = useAuth();
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/login');
+  };
 
   return (
     <>
@@ -20,7 +27,7 @@ export const UserHeader = () => {
         <div className="flex items-center gap-2">
           <YearSelector className="scale-90" />
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="p-1.5 text-primary hover:bg-primary/10 rounded-full transition-colors cursor-pointer flex items-center justify-center"
             title="Admin Login / Access"
           >
@@ -51,7 +58,7 @@ export const UserHeader = () => {
               <div className="font-label-sm text-[10px] text-on-surface-variant">View-Only Access</div>
             </div>
             <button
-              onClick={() => navigate('/login')}
+              onClick={handleLogout}
               className="ml-2 px-3 py-1.5 rounded-xl border border-primary/40 text-primary hover:bg-primary hover:text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1 cursor-pointer shadow-xs"
               title="Admin Login Page"
             >
