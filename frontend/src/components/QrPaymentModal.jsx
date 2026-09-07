@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 /**
- * Premium Animated QR Payment Modal
- * Features smooth micro-interactions, staggered entrance sequence,
- * mobile bottom-sheet positioning, and keyboard/reduced-motion accessibility.
+ * Responsive Mobile Bottom-Sheet & Desktop Centered QR Payment Modal
+ * Features safe-area awareness, viewport height constraints, non-scrollable background lock,
+ * and responsive QR sizing for mobile screens (360px, 390px, 430px) & desktop.
  */
 export const QrPaymentModal = ({
   isOpen,
@@ -15,7 +15,7 @@ export const QrPaymentModal = ({
   const [animateState, setAnimateState] = useState('closed'); // 'closed' | 'opening' | 'visible' | 'closing'
   const [stage, setStage] = useState(0); // 0: init, 1: header, 2: qr, 3: details & buttons
 
-  // Handle Close with smooth exit animation (220ms)
+  // Smooth exit animation (250ms)
   const handleClose = useCallback(() => {
     if (animateState === 'closing' || animateState === 'closed') return;
     setAnimateState('closing');
@@ -25,12 +25,12 @@ export const QrPaymentModal = ({
       setIsRendered(false);
       setStage(0);
       if (onClose) onClose();
-    }, 220);
+    }, 250);
 
     return () => clearTimeout(exitTimer);
   }, [animateState, onClose]);
 
-  // Listen for Escape key to trigger smooth close
+  // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && (animateState === 'visible' || animateState === 'opening')) {
@@ -41,31 +41,30 @@ export const QrPaymentModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [animateState, handleClose]);
 
+  // Lock background body scroll while modal is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Entrance animation trigger and staggered steps
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true);
 
-      // Initiate backdrop & container open transition
-      const timer0 = setTimeout(() => {
-        setAnimateState('opening');
-      }, 20);
-
-      // Stage 1: Header badge entrance (~70ms)
-      const timer1 = setTimeout(() => {
-        setStage(1);
-      }, 70);
-
-      // Stage 2: QR code entrance (~160ms)
-      const timer2 = setTimeout(() => {
-        setStage(2);
-      }, 160);
-
-      // Stage 3: Payment details & action buttons entrance (~270ms)
+      const timer0 = setTimeout(() => setAnimateState('opening'), 20);
+      const timer1 = setTimeout(() => setStage(1), 50);
+      const timer2 = setTimeout(() => setStage(2), 120);
       const timer3 = setTimeout(() => {
         setStage(3);
         setAnimateState('visible');
-      }, 270);
+      }, 220);
 
       return () => {
         clearTimeout(timer0);
@@ -95,105 +94,103 @@ export const QrPaymentModal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+      className={`fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:p-4 overflow-hidden ${
+        isRendered ? 'pointer-events-auto' : 'pointer-events-none'
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="qr-modal-title"
     >
-      {/* 1 & 8. BACKDROP OVERLAY: Fade 0 -> 60% opacity on enter, 60% -> 0 on exit */}
+      {/* 8. BACKDROP OVERLAY: Fade in/out, covers bottom navigation (z-[100]) */}
       <div 
         onClick={handleClose}
-        className={`fixed inset-0 bg-black/65 backdrop-blur-md transition-opacity duration-300 ease-out transform-gpu motion-reduce:transition-none ${
+        className={`fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-300 ease-out transform-gpu ${
           isVisibleOrOpening && !isClosing ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
-      {/* 1 & 2. MODAL CONTAINER: Desktop scale/fade (95% -> 100%), Mobile bottom sheet slide-up */}
+      {/* 1, 2 & 7. MODAL SHEET CONTAINER: Max 80vh height, responsive bottom positioning, internal scroll if needed */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-full sm:max-w-md bg-gradient-to-b from-gray-900 via-slate-900 to-black border-t-2 sm:border-2 border-purple-500/70 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-[0_0_50px_rgba(147,51,234,0.45)] text-center space-y-4 max-h-[90vh] overflow-y-auto transform-gpu will-change-transform transition-all duration-300 ease-out motion-reduce:transition-none ${
+        className={`relative w-full max-w-[380px] sm:max-w-md bg-gradient-to-b from-slate-900 via-gray-900 to-black border border-purple-500/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-[0_0_40px_rgba(147,51,234,0.4)] text-center max-h-[80vh] sm:max-h-[85vh] overflow-y-auto transform-gpu will-change-transform transition-all duration-300 ease-out z-10 flex flex-col justify-between ${
           isVisibleOrOpening && !isClosing
             ? 'opacity-100 scale-100 translate-y-0'
-            : 'opacity-0 scale-95 translate-y-8 sm:translate-y-4 pointer-events-none'
+            : 'opacity-0 scale-95 translate-y-12 sm:translate-y-4 pointer-events-none'
         }`}
       >
-        {/* Mobile Bottom-Sheet Handle Bar */}
-        <div className="w-12 h-1 bg-white/25 rounded-full mx-auto sm:hidden -mt-1 mb-2" />
+        {/* Mobile Handle Bar */}
+        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto sm:hidden mb-1 flex-shrink-0" />
 
-        {/* 6. CLOSE (X) BUTTON: Hover rotate + active scale */}
+        {/* 9. CLOSE (X) BUTTON: Top right, 44px touch target */}
         <button
           onClick={handleClose}
-          className="absolute top-3.5 right-3.5 text-gray-400 hover:text-white bg-white/10 hover:bg-purple-600/80 p-2 rounded-full transition-all duration-200 ease-out active:scale-90 hover:rotate-90 focus:outline-none z-10 motion-reduce:transition-none"
+          className="absolute top-3 right-3 text-gray-300 hover:text-white bg-white/10 hover:bg-purple-600/80 w-11 h-11 rounded-full transition-all duration-200 ease-out active:scale-90 flex items-center justify-center focus:outline-none z-20"
           title="Close QR Modal"
           aria-label="Close"
         >
-          <span className="material-symbols-outlined text-lg block">close</span>
+          <span className="material-symbols-outlined text-xl block">close</span>
         </button>
 
-        {/* 4. HEADER BADGE: Delayed subtle fade/slide down (~70ms) */}
-        <div 
-          className={`inline-flex items-center gap-1.5 bg-purple-950/80 border border-purple-500/50 px-3.5 py-1 rounded-full text-purple-200 text-xs font-bold shadow-inner transition-all duration-250 ease-out motion-reduce:transition-none ${
-            stage >= 1 && !isClosing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-          }`}
-        >
-          <span className="text-amber-400">🪔</span>
-          <span id="qr-modal-title">Vinayagar Chathurthi Contribution</span>
+        {/* HEADER BADGE */}
+        <div className="pt-0.5 pb-1.5 flex-shrink-0">
+          <div 
+            className={`inline-flex items-center gap-1.5 bg-purple-950/80 border border-purple-500/50 px-3 py-1 rounded-full text-purple-200 text-xs font-bold shadow-inner transition-all duration-250 ease-out ${
+              stage >= 1 && !isClosing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+            }`}
+          >
+            <span className="text-amber-400">🪔</span>
+            <span id="qr-modal-title">Vinayagar Chathurthi Contribution</span>
+          </div>
         </div>
 
-        {/* 3. QR CODE CONTAINER: Subtle fade + scale (95% -> 100%, 250ms), static thereafter */}
+        {/* 4 & 5. QR CODE CONTAINER & IMAGE */}
         <div 
-          className={`bg-slate-950 p-2 sm:p-2.5 rounded-2xl shadow-2xl border-2 border-purple-500/60 inline-block relative mx-auto max-w-[250px] sm:max-w-[270px] w-full group transition-all duration-250 ease-out motion-reduce:transition-none ${
+          className={`my-1 sm:my-2 flex-shrink-0 transition-all duration-250 ease-out ${
             stage >= 2 && !isClosing ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
           }`}
         >
-          <img 
-            src={qrImageUrl} 
-            alt={`PhonePe QR Code - ${accountName}`} 
-            className="w-full h-auto max-h-[360px] rounded-xl object-contain mx-auto shadow-md select-none"
-          />
-          {/* Floating download button inside QR frame */}
-          <button
-            onClick={handleDownloadQr}
-            className="absolute bottom-3 right-3 bg-purple-950/90 hover:bg-amber-500 text-amber-300 hover:text-slate-950 p-2 rounded-xl border border-amber-400/40 shadow-lg transition-all duration-200 ease-out active:scale-95 hover:shadow-amber-500/30 flex items-center justify-center gap-1 text-xs font-bold motion-reduce:transition-none"
-            title="Download QR Image"
-          >
-            <span className="material-symbols-outlined text-sm">download</span>
-          </button>
+          <div className="bg-slate-950 p-2 rounded-2xl shadow-xl border-2 border-purple-500/60 inline-block relative mx-auto group">
+            <img 
+              src={qrImageUrl} 
+              alt={`PhonePe QR Code - ${accountName}`} 
+              className="w-[195px] min-[380px]:w-[215px] min-[420px]:w-[235px] sm:w-[290px] aspect-square rounded-xl object-contain mx-auto shadow-md select-none block"
+            />
+          </div>
         </div>
 
-        {/* 5. PAYMENT DETAILS: Subtle fade & slide up (~270ms delay) */}
+        {/* PAYMENT DETAILS */}
         <div 
-          className={`space-y-1 bg-purple-950/40 p-3 rounded-2xl border border-purple-500/30 transition-all duration-250 ease-out motion-reduce:transition-none ${
+          className={`my-1 sm:my-2 bg-purple-950/40 py-2 px-3 rounded-xl border border-purple-500/30 flex-shrink-0 transition-all duration-250 ease-out ${
             stage >= 3 && !isClosing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
-          <div className="font-bold text-sm sm:text-base text-white flex items-center justify-center gap-1.5">
+          <div className="font-bold text-xs sm:text-sm text-white flex items-center justify-center gap-1.5">
             <span className="text-purple-400">Account:</span> 
             <span className="text-amber-300 font-extrabold">{accountName}</span>
           </div>
-          <p className="text-xs text-purple-200/80 leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-purple-200/80 leading-tight mt-0.5">
             Scan & Pay using PhonePe or any UPI Payment App
           </p>
         </div>
 
-        {/* 6. ACTION BUTTONS: Hover elevation & active tap scale */}
+        {/* 6. ACTION BUTTONS: Stacked vertically on mobile, side-by-side on desktop */}
         <div 
-          className={`flex gap-2.5 pt-1 transition-all duration-250 ease-out motion-reduce:transition-none ${
+          className={`flex flex-col sm:flex-row gap-2 pt-1 flex-shrink-0 transition-all duration-250 ease-out ${
             stage >= 3 && !isClosing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
           <button
             onClick={handleDownloadQr}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition-all duration-200 ease-out shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 flex items-center justify-center gap-2 border border-amber-400/40 motion-reduce:transition-none"
+            className="w-full sm:flex-1 h-12 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold px-4 rounded-xl text-xs sm:text-sm transition-all duration-200 ease-out shadow-lg active:scale-95 flex items-center justify-center gap-2 border border-amber-400/40 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">download</span>
-            Download QR
+            <span>Download QR</span>
           </button>
           <button
             onClick={handleClose}
-            className="flex-1 bg-purple-600/90 hover:bg-purple-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition-all duration-200 ease-out shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 border border-purple-400/40 motion-reduce:transition-none"
+            className="w-full sm:flex-1 h-12 bg-purple-600/90 hover:bg-purple-500 text-white font-bold px-4 rounded-xl text-xs sm:text-sm transition-all duration-200 ease-out shadow-lg active:scale-95 flex items-center justify-center gap-2 border border-purple-400/40 cursor-pointer"
           >
-            Close
+            <span>Close</span>
           </button>
         </div>
       </div>
