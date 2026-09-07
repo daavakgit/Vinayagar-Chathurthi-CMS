@@ -186,7 +186,7 @@ export const LandingPage = () => {
             </div>
             <h3 className="font-title-md font-bold text-on-background">Financial Reporting</h3>
             <p className="font-body-sm text-on-surface-variant">
-              Real-time balance summaries, visual charts, and downloadable PDF/Excel reports accessible to all.
+              Real-time balance summaries, visual charts, and downloadable PDF reports accessible to all.
             </p>
           </div>
         </div>

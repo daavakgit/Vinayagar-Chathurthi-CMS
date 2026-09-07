@@ -5,7 +5,6 @@ import { formatCurrency, formatDate, getCategoryLabel } from '../utils/formatter
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Toast } from '../components/Toast';
 import { exportReportToPDF } from '../utils/exportPdf';
-import { exportReportToExcel } from '../utils/exportExcel';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend,
@@ -85,24 +84,6 @@ export const ReportsPage = () => {
     }
   };
 
-  const handleExportExcel = async () => {
-    try {
-      setExporting('excel');
-      exportReportToExcel({
-        eventName: reportData?.eventName || 'Vinayagar Chathurthi',
-        year: selectedYear,
-        collections: rawCollections,
-        expenses: rawExpenses,
-        splits: rawSplits,
-      });
-      setToast({ message: 'Excel exported successfully', type: 'success' });
-    } catch (err) {
-      setToast({ message: 'Excel export failed: ' + err.message, type: 'error' });
-    } finally {
-      setExporting('');
-    }
-  };
-
   if (loading) return <LoadingSpinner label="Generating financial reports..." />;
 
   const d = reportData?.data;
@@ -135,11 +116,6 @@ export const ReportsPage = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-bold hover:bg-primary-container transition-all active:scale-95 disabled:opacity-50">
             {exporting === 'pdf' ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span className="material-symbols-outlined text-base">picture_as_pdf</span>}
             Export PDF
-          </button>
-          <button onClick={handleExportExcel} disabled={exporting === 'excel'}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-tertiary text-on-tertiary font-label-md font-bold hover:bg-tertiary-container transition-all active:scale-95 disabled:opacity-50">
-            {exporting === 'excel' ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <span className="material-symbols-outlined text-base">table_view</span>}
-            Export Excel
           </button>
         </div>
       </div>
