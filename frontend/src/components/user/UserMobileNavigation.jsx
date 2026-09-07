@@ -3,12 +3,12 @@ import { NavLink } from 'react-router-dom';
 
 export const UserMobileNavigation = () => {
   const navItems = [
-    { label: 'Home', path: '/user/home', icon: 'home' },
-    { label: 'Collections', path: '/user/collections', icon: 'payments' },
-    { label: 'Expenses', path: '/user/expenses', icon: 'receipt_long' },
-    { label: 'Split', path: '/user/split', icon: 'handshake' },
-    { label: 'Reports', path: '/user/reports', icon: 'bar_chart' },
-    { label: 'Settings', path: '/user/settings', icon: 'settings' },
+    { label: 'Home', path: '/portal/home', icon: 'home' },
+    { label: 'Collections', path: '/portal/collections', icon: 'payments' },
+    { label: 'Expenses', path: '/portal/expenses', icon: 'receipt_long' },
+    { label: 'Split', path: '/portal/split', icon: 'handshake' },
+    { label: 'Reports', path: '/portal/reports', icon: 'bar_chart' },
+    { label: 'Settings', path: '/portal/settings', icon: 'settings' },
   ];
 
   return (

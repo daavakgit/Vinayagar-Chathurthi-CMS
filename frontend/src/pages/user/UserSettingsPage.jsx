@@ -37,11 +37,12 @@ export const UserSettingsPage = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/portal')}
-          className="px-4 py-2 rounded-xl bg-surface border border-outline-variant text-on-surface hover:text-error hover:border-error text-xs font-label-md transition-colors flex items-center gap-1.5"
+          onClick={() => navigate('/login')}
+          className="px-4 py-2 rounded-xl bg-surface border border-outline-variant text-on-surface hover:text-primary hover:border-primary text-xs font-label-md transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+          title="Admin Login Page"
         >
           <span className="material-symbols-outlined text-base">logout</span>
-          <span>Logout Portal</span>
+          <span>Logout</span>
         </button>
       </div>
 

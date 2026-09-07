@@ -7,12 +7,12 @@ export const UserSidebar = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { label: 'Home', path: '/user/home', icon: 'home' },
-    { label: 'Collections', path: '/user/collections', icon: 'payments' },
-    { label: 'Expenses', path: '/user/expenses', icon: 'receipt_long' },
-    { label: 'Split & Recovery', path: '/user/split', icon: 'handshake' },
-    { label: 'Reports', path: '/user/reports', icon: 'analytics' },
-    { label: 'Settings', path: '/user/settings', icon: 'settings' },
+    { label: 'Home', path: '/portal/home', icon: 'home' },
+    { label: 'Collections', path: '/portal/collections', icon: 'payments' },
+    { label: 'Expenses', path: '/portal/expenses', icon: 'receipt_long' },
+    { label: 'Split & Recovery', path: '/portal/split', icon: 'handshake' },
+    { label: 'Reports', path: '/portal/reports', icon: 'analytics' },
+    { label: 'Settings', path: '/portal/settings', icon: 'settings' },
   ];
 
   return (
@@ -76,11 +76,12 @@ export const UserSidebar = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate('/portal')}
-          className="w-full py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-primary hover:bg-surface-container text-xs font-label-md transition-colors flex items-center justify-center gap-1.5"
+          onClick={() => navigate('/login')}
+          className="w-full py-2 rounded-xl border border-outline-variant text-on-surface-variant hover:text-primary hover:bg-surface-container text-xs font-label-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          title="Admin Login / Access"
         >
           <span className="material-symbols-outlined text-sm">logout</span>
-          <span>Switch Portal</span>
+          <span>Logout</span>
         </button>
       </div>
     </nav>

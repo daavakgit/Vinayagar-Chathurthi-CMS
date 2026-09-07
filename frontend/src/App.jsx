@@ -14,10 +14,10 @@ import { SplitPage } from './pages/SplitPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
-// New Public & User Components
+// Public & User Components
 import { SplashScreen } from './components/SplashScreen';
 import { LandingPage } from './pages/LandingPage';
-import { PortalEntryPage } from './pages/PortalEntryPage';
+import { AdminLoginPage } from './pages/AdminLoginPage';
 import { UserLayout } from './pages/user/UserLayout';
 import { UserHomePage } from './pages/user/UserHomePage';
 import { UserCollectionsPage } from './pages/user/UserCollectionsPage';
@@ -30,7 +30,7 @@ import { UserSettingsPage } from './pages/user/UserSettingsPage';
 const AdminLayout = () => {
   const { isAdmin } = useAuth();
   if (!isAdmin) {
-    return <Navigate to="/portal" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -64,18 +64,19 @@ function App() {
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
-          {/* Initial Entry Experience: Vinayagar Splash Screen (2000ms -> /portal) */}
+          {/* 1. Initial Entry Experience: Vinayagar Splash Screen (3000ms -> /portal) */}
           <Route path="/" element={<SplashScreen />} />
 
           {/* Existing Public Landing Page */}
           <Route path="/landing" element={<LandingPage />} />
 
-          {/* Portal Selector & Existing Admin Login Entry Page */}
-          <Route path="/portal" element={<PortalEntryPage />} />
+          {/* 5. Dedicated Admin Login Page (Secure gateway to Admin Dashboard) */}
+          <Route path="/login" element={<AdminLoginPage />} />
+          <Route path="/admin-login" element={<AdminLoginPage />} />
 
-          {/* User Portal Experience (View-Only) */}
-          <Route path="/user" element={<UserLayout />}>
-            <Route index element={<Navigate to="/user/home" replace />} />
+          {/* 2 & 3. User Portal / User Dashboard (Direct access, zero login friction) */}
+          <Route path="/portal" element={<UserLayout />}>
+            <Route index element={<Navigate to="/portal/home" replace />} />
             <Route path="home" element={<UserHomePage />} />
             <Route path="collections" element={<UserCollectionsPage />} />
             <Route path="expenses" element={<UserExpensesPage />} />
@@ -84,7 +85,18 @@ function App() {
             <Route path="settings" element={<UserSettingsPage />} />
           </Route>
 
-          {/* Existing Protected Admin Portal */}
+          {/* Alias /user route to /portal for backward compatibility */}
+          <Route path="/user" element={<UserLayout />}>
+            <Route index element={<Navigate to="/portal/home" replace />} />
+            <Route path="home" element={<UserHomePage />} />
+            <Route path="collections" element={<UserCollectionsPage />} />
+            <Route path="expenses" element={<UserExpensesPage />} />
+            <Route path="split" element={<UserSplitPage />} />
+            <Route path="reports" element={<UserReportsPage />} />
+            <Route path="settings" element={<UserSettingsPage />} />
+          </Route>
+
+          {/* 6. Protected Admin Portal */}
           <Route path="/admin/*" element={<AdminLayout />} />
 
           {/* Backward Compatibility Redirects */}
@@ -94,7 +106,7 @@ function App() {
           <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
           <Route path="/settings" element={<Navigate to="/admin/settings" replace />} />
 
-          {/* Catch-all Redirect */}
+          {/* Catch-all Redirect to Splash Screen */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
