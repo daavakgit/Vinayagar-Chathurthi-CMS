@@ -30,7 +30,7 @@ import { UserSettingsPage } from './pages/user/UserSettingsPage';
 const AdminLayout = () => {
   const { isAdmin } = useAuth();
   if (!isAdmin) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/portal" replace />;
   }
 
   return (
