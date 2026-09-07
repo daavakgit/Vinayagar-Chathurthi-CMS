@@ -77,7 +77,7 @@ export const UserSettingsPage = () => {
               <div className="space-y-1">
                 <span className="text-on-surface-variant font-semibold">Venue / Location</span>
                 <div className="p-3 rounded-xl bg-surface-container font-bold text-on-background">
-                  {s.venue || 'Main Street Temple Ground, Community Center'}
+                  {s.venue || 'PeriyaParusePalayam'}
                 </div>
               </div>
 
@@ -91,7 +91,7 @@ export const UserSettingsPage = () => {
               <div className="space-y-1 md:col-span-2">
                 <span className="text-on-surface-variant font-semibold">Contact Information</span>
                 <div className="p-3 rounded-xl bg-surface-container font-bold text-on-background">
-                  {s.organizerContact || '+91 98765 43210'} · support@vcms.org
+                  {s.organizerContact || '+91 8610780438'}
                 </div>
               </div>
 
