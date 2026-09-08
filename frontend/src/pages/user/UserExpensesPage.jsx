@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useYear } from '../../context/YearContext';
 import { getExpensesApi } from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -6,33 +6,66 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 export const UserExpensesPage = () => {
   const { selectedYear } = useYear();
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `vcm_expenses_${selectedYear}`;
+
+  // Initialise from sessionStorage cache immediately — prevents flicker to 0
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [loading, setLoading] = useState(() => {
+    try { return !sessionStorage.getItem(cacheKey); }
+    catch { return true; }
+  });
+
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   const loadExpenses = useCallback(async () => {
     try {
-      setLoading(true);
+      const hasCached = expenses.length > 0;
+      if (!hasCached) setLoading(true);
+
       const res = await getExpensesApi({ year: selectedYear });
       if (res?.success) {
-        setExpenses(res.data || []);
+        const data = res.data || [];
+        setExpenses(data);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* ignore quota */ }
       }
     } catch (err) {
       console.error('Error loading expenses:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear]);
+  }, [selectedYear, cacheKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { loadExpenses(); }, [loadExpenses]);
+  // Refresh on year change — reset filter and check cache
+  useEffect(() => {
+    setCategoryFilter('all');
+    try {
+      if (!sessionStorage.getItem(cacheKey)) {
+        setExpenses([]);
+        setLoading(true);
+      }
+    } catch { /* ignore */ }
+    loadExpenses();
+  }, [selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Unique categories
-  const categories = Array.from(new Set(expenses.map(e => e.category))).filter(Boolean);
+  // Unique categories derived from all loaded expenses
+  const categories = useMemo(
+    () => Array.from(new Set(expenses.map(e => e.category))).filter(Boolean),
+    [expenses]
+  );
 
-  // Filtered expenses
-  const filteredExpenses = categoryFilter === 'all'
-    ? expenses
-    : expenses.filter(e => e.category === categoryFilter);
+  // Filtered expenses for display
+  const filteredExpenses = useMemo(
+    () => categoryFilter === 'all' ? expenses : expenses.filter(e => e.category === categoryFilter),
+    [expenses, categoryFilter]
+  );
 
   const totalExpenseSum = filteredExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 

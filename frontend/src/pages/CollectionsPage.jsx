@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useYear } from '../context/YearContext';
 import {
@@ -61,12 +61,19 @@ export const CollectionsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState({ message: '', type: 'success' });
 
+  // Pagination
+  const RECORDS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     const cat = searchParams.get('category');
     if (cat) {
       setCategory(cat);
     }
   }, [searchParams]);
+
+  // Reset to page 1 whenever filters or year change
+  useEffect(() => { setCurrentPage(1); }, [selectedYear, search, category, paymentStatus, startDate, endDate]);
 
   const loadCollections = useCallback(async () => {
     try {
@@ -131,7 +138,29 @@ export const CollectionsPage = () => {
     setStartDate('');
     setEndDate('');
     setSearchParams({});
+    setCurrentPage(1);
   };
+
+  // Derived pagination values
+  const totalPages = Math.ceil(collections.length / RECORDS_PER_PAGE);
+  const pagedCollections = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PER_PAGE;
+    return collections.slice(start, start + RECORDS_PER_PAGE);
+  }, [collections, currentPage]);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const delta = 2;
+    const left = Math.max(2, currentPage - delta);
+    const right = Math.min(totalPages - 1, currentPage + delta);
+    pages.push(1);
+    if (left > 2) pages.push('...');
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  }, [currentPage, totalPages]);
 
   return (
     <div className="space-y-6">
@@ -208,7 +237,7 @@ export const CollectionsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {collections.map((c, idx) => (
+                {pagedCollections.map((c, idx) => (
                   <tr key={c._id} className={`border-b border-outline-variant/60 hover:bg-surface-container-low/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-container-lowest/40'}`}>
                     <td className="px-4 py-3 font-label-md text-label-md text-on-background font-medium">{c.name}</td>
                     <td className="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant">{c.phone || '—'}</td>
@@ -235,7 +264,7 @@ export const CollectionsPage = () => {
 
           {/* Mobile Card List */}
           <div className="md:hidden divide-y divide-outline-variant/60">
-            {collections.map((c) => (
+            {pagedCollections.map((c) => (
               <div key={c._id} className="p-4 hover:bg-surface-container-low/50 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -264,6 +293,58 @@ export const CollectionsPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls — shown only when more than 10 records */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-outline-variant bg-surface-container-low/40 flex-wrap">
+              {/* Page info */}
+              <span className="font-label-sm text-[11px] text-on-surface-variant whitespace-nowrap">
+                Page <span className="font-bold text-on-background">{currentPage}</span> of{' '}
+                <span className="font-bold text-on-background">{totalPages}</span>
+                {' '}·{' '}
+                {(currentPage - 1) * RECORDS_PER_PAGE + 1}–{Math.min(currentPage * RECORDS_PER_PAGE, collections.length)} of {collections.length}
+              </span>
+
+              {/* Page buttons */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-0.5 px-2.5 py-1.5 rounded-lg font-label-sm text-[11px] font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary bg-surface border-outline-variant text-on-surface-variant"
+                >
+                  <span className="material-symbols-outlined text-sm leading-none">chevron_left</span>
+                  <span className="hidden sm:inline">Prev</span>
+                </button>
+
+                {pageNumbers.map((page, i) =>
+                  page === '...' ? (
+                    <span key={`el-${i}`} className="px-1.5 text-on-surface-variant text-[11px] select-none">…</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[30px] h-[30px] rounded-lg font-label-sm text-[11px] font-bold border transition-all ${
+                        currentPage === page
+                          ? 'bg-primary text-on-primary border-primary shadow-sm'
+                          : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-0.5 px-2.5 py-1.5 rounded-lg font-label-sm text-[11px] font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary bg-surface border-outline-variant text-on-surface-variant"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="material-symbols-outlined text-sm leading-none">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

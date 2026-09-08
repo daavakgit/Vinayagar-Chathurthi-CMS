@@ -74,40 +74,50 @@ export const UserHomePage = () => {
     document.body.removeChild(link);
   };
 
-  const loadHomeData = useCallback(async () => {
+  const loadHomeData = useCallback(async (yearKey, key) => {
     try {
-      if (!metrics) setLoading(true);
       const [dashRes, colRes, expRes, setRes] = await Promise.all([
-        getDashboardApi(selectedYear),
-        getCollectionsApi({ year: selectedYear, limit: 5 }),
-        getExpensesApi({ year: selectedYear, limit: 5 }),
+        getDashboardApi(yearKey),
+        getCollectionsApi({ year: yearKey, limit: 5 }),
+        getExpensesApi({ year: yearKey, limit: 5 }),
         getSettingsApi(),
       ]);
 
       if (dashRes?.success) {
         setMetrics(dashRes.data);
-        sessionStorage.setItem(`${cacheKey}_metrics`, JSON.stringify(dashRes.data));
+        try { sessionStorage.setItem(`${key}_metrics`, JSON.stringify(dashRes.data)); } catch { /* ignore */ }
       }
       if (colRes?.success) {
         setCollections(colRes.data || []);
-        sessionStorage.setItem(`${cacheKey}_collections`, JSON.stringify(colRes.data || []));
+        try { sessionStorage.setItem(`${key}_collections`, JSON.stringify(colRes.data || [])); } catch { /* ignore */ }
       }
       if (expRes?.success) {
         setExpenses(expRes.data || []);
-        sessionStorage.setItem(`${cacheKey}_expenses`, JSON.stringify(expRes.data || []));
+        try { sessionStorage.setItem(`${key}_expenses`, JSON.stringify(expRes.data || [])); } catch { /* ignore */ }
       }
       if (setRes?.success) {
         setSettings(setRes.data);
-        sessionStorage.setItem(`${cacheKey}_settings`, JSON.stringify(setRes.data));
+        try { sessionStorage.setItem(`${key}_settings`, JSON.stringify(setRes.data)); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error('Error loading User Home data:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, cacheKey, metrics]);
+  }, []);
 
-  useEffect(() => { loadHomeData(); }, [selectedYear]);
+  useEffect(() => {
+    // If no cache for this year, ensure loading spinner shows
+    const hasCachedMetrics = (() => { try { return !!sessionStorage.getItem(`${cacheKey}_metrics`); } catch { return false; } })();
+    if (!hasCachedMetrics) {
+      setMetrics(null);
+      setCollections([]);
+      setExpenses([]);
+      setSettings(null);
+      setLoading(true);
+    }
+    loadHomeData(selectedYear, cacheKey);
+  }, [selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading && !metrics) return <SummarySkeleton />;
 
