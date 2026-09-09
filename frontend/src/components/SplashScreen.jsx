@@ -1,24 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { warmUpBackend } from '../services/api';
 
 export const SplashScreen = () => {
   const navigate = useNavigate();
   const [fadingOut, setFadingOut] = useState(false);
+  const isUnmounted = useRef(false);
 
   useEffect(() => {
-    // 1. Hold full opacity for 2500ms, then trigger 500ms fade-out (total 3000ms)
-    const fadeTimer = setTimeout(() => {
-      setFadingOut(true);
-    }, 2500);
+    isUnmounted.current = false;
+    const splashStartTime = Date.now();
+    const MIN_DISPLAY_TIME = 2500; // 2500ms display before starting 500ms fade-out (total min 3000ms)
 
-    // 2. Navigate to existing portal/login page at exact 3000ms mark
-    const navTimer = setTimeout(() => {
-      navigate('/portal', { replace: true });
-    }, 3000);
+    // Immediately trigger backend health check pre-warm request
+    const prewarmPromise = warmUpBackend();
+
+    let fadeTimer = null;
+    let navTimer = null;
+
+    const handleSplashTransition = async () => {
+      // Wait for backend health check pre-warm (or max safety timeout)
+      await prewarmPromise;
+
+      if (isUnmounted.current) return;
+
+      // Ensure minimum splash display duration of 2500ms
+      const elapsedTime = Date.now() - splashStartTime;
+      const remainingTime = Math.max(0, MIN_DISPLAY_TIME - elapsedTime);
+
+      fadeTimer = setTimeout(() => {
+        if (isUnmounted.current) return;
+        setFadingOut(true);
+
+        navTimer = setTimeout(() => {
+          if (!isUnmounted.current) {
+            navigate('/portal', { replace: true });
+          }
+        }, 500);
+      }, remainingTime);
+    };
+
+    handleSplashTransition();
 
     return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(navTimer);
+      isUnmounted.current = true;
+      if (fadeTimer) clearTimeout(fadeTimer);
+      if (navTimer) clearTimeout(navTimer);
     };
   }, [navigate]);
 

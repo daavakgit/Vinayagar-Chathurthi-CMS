@@ -9,27 +9,60 @@ import {
 
 export const UserReportsPage = () => {
   const { selectedYear } = useYear();
-  const [metrics, setMetrics] = useState(null);
-  const [reportData, setReportData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `vcm_user_reports_${selectedYear}`;
+
+  const [metrics, setMetrics] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_metrics`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [reportData, setReportData] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_reportData`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(!metrics);
 
   const loadReportMetrics = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!metrics) setLoading(true);
       const [dashRes, reportRes] = await Promise.all([
         getDashboardApi(selectedYear),
         getReportsApi({ year: selectedYear }),
       ]);
-      if (dashRes?.success) setMetrics(dashRes.data);
-      if (reportRes?.success) setReportData(reportRes.data);
+      if (dashRes?.success) {
+        setMetrics(dashRes.data);
+        try { sessionStorage.setItem(`${cacheKey}_metrics`, JSON.stringify(dashRes.data)); } catch { /* ignore */ }
+      }
+      if (reportRes?.success) {
+        setReportData(reportRes.data);
+        try { sessionStorage.setItem(`${cacheKey}_reportData`, JSON.stringify(reportRes.data)); } catch { /* ignore */ }
+      }
     } catch (err) {
       console.error('Error loading User Reports metrics:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear]);
+  }, [selectedYear, cacheKey]);
 
-  useEffect(() => { loadReportMetrics(); }, [loadReportMetrics]);
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem(`${cacheKey}_metrics`)) {
+        setMetrics(null);
+        setReportData(null);
+        setLoading(true);
+      }
+    } catch { /* ignore */ }
+    loadReportMetrics();
+  }, [selectedYear]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

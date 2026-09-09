@@ -6,24 +6,49 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 export const UserSplitPage = () => {
   const { selectedYear } = useYear();
-  const [splits, setSplits] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `vcm_splits_${selectedYear}`;
+
+  const [splits, setSplits] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [loading, setLoading] = useState(() => {
+    try { return !sessionStorage.getItem(cacheKey); }
+    catch { return true; }
+  });
 
   const loadSplits = useCallback(async () => {
     try {
-      setLoading(true);
+      const hasCached = splits.length > 0;
+      if (!hasCached) setLoading(true);
+
       const res = await getSplitsApi({ year: selectedYear });
       if (res?.success) {
-        setSplits(res.data || []);
+        const data = res.data || [];
+        setSplits(data);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error('Error loading splits:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear]);
+  }, [selectedYear, cacheKey]);
 
-  useEffect(() => { loadSplits(); }, [loadSplits]);
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem(cacheKey)) {
+        setSplits([]);
+        setLoading(true);
+      }
+    } catch { /* ignore */ }
+    loadSplits();
+  }, [selectedYear]);
 
   // Derived metrics
   const totalGiven = splits.reduce((acc, s) => acc + (s.amountGiven || 0), 0);

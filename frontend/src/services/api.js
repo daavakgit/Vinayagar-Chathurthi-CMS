@@ -21,6 +21,58 @@ api.interceptors.response.use(
   }
 );
 
+// Health check / Backend Pre-warm
+export const checkHealthApi = (config) => api.get('/health', config);
+
+let prewarmPromise = null;
+let isBackendWarmedUp = false;
+
+export const warmUpBackend = () => {
+  if (isBackendWarmedUp) {
+    return Promise.resolve(true);
+  }
+  if (prewarmPromise) {
+    return prewarmPromise;
+  }
+
+  prewarmPromise = (async () => {
+    const startTime = Date.now();
+    const MAX_TOTAL_WARMUP_TIME = 20000; // 20 seconds maximum timeout
+    const SINGLE_REQUEST_TIMEOUT = 5000; // 5 seconds per request timeout
+    const RETRY_INTERVAL = 1500; // 1.5 seconds delay between retries
+
+    while (Date.now() - startTime < MAX_TOTAL_WARMUP_TIME) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), SINGLE_REQUEST_TIMEOUT);
+
+        const res = await api.get('/health', { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (res && (res.status === 'OK' || res.status === 'ok' || res.system)) {
+          isBackendWarmedUp = true;
+          return true;
+        }
+      } catch (err) {
+        // Backend waking up or network error, retry
+      }
+
+      if (Date.now() - startTime >= MAX_TOTAL_WARMUP_TIME) {
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
+    }
+
+    return isBackendWarmedUp;
+  })();
+
+  return prewarmPromise;
+};
+
+// Trigger pre-warm immediately when API module is loaded
+warmUpBackend();
+
 // Dashboard
 export const getDashboardApi = (year) => api.get(`/dashboard?year=${year}`);
 
