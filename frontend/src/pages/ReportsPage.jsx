@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../context/YearContext';
-import { getReportsApi, getCollectionsApi, getExpensesApi, getSplitsApi } from '../services/api';
+import { getReportsApi, getCollectionsApi, getExpensesApi, getSplitsApi, getMaterialContributionsApi } from '../services/api';
 import { formatCurrency, formatDate, getCategoryLabel } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Toast } from '../components/Toast';
@@ -32,6 +32,7 @@ export const ReportsPage = () => {
   const [rawCollections, setRawCollections] = useState([]);
   const [rawExpenses, setRawExpenses] = useState([]);
   const [rawSplits, setRawSplits] = useState([]);
+  const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
   const [toast, setToast] = useState({ message: '' });
@@ -45,17 +46,19 @@ export const ReportsPage = () => {
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
-      const [reportRes, colRes, expRes, splitRes] = await Promise.all([
+      const [reportRes, colRes, expRes, splitRes, matRes] = await Promise.all([
         getReportsApi(params),
         getCollectionsApi({ year: selectedYear }),
         getExpensesApi({ year: selectedYear }),
         getSplitsApi({ year: selectedYear }),
+        getMaterialContributionsApi({ year: selectedYear }),
       ]);
 
       if (reportRes.success) setReportData(reportRes);
       if (colRes.success) setRawCollections(colRes.data || []);
       if (expRes.success) setRawExpenses(expRes.data || []);
       if (splitRes.success) setRawSplits(splitRes.data || []);
+      if (matRes.success) setRawMaterials(matRes.data || []);
     } catch (err) {
       setToast({ message: err.message, type: 'error' });
     } finally {
@@ -75,6 +78,7 @@ export const ReportsPage = () => {
         collections: rawCollections,
         expenses: rawExpenses,
         splits: rawSplits,
+        materials: rawMaterials,
       });
       setToast({ message: 'PDF exported successfully', type: 'success' });
     } catch (err) {

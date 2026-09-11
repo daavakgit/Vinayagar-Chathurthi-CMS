@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+const RECORDS_PER_PAGE = 10;
 import { useYear } from '../context/YearContext';
 import {
   getMaterialContributionsApi,
@@ -21,6 +23,7 @@ export const MaterialContributionsPage = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [status, setStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [metrics, setMetrics] = useState({
     totalItems: 0,
     totalEstimatedValue: 0,
@@ -58,6 +61,7 @@ export const MaterialContributionsPage = () => {
           setMetrics(res.metrics);
         }
       }
+        setCurrentPage(1);
     } catch (err) {
       setToast({ message: err.message, type: 'error' });
     } finally {
@@ -101,6 +105,26 @@ export const MaterialContributionsPage = () => {
       setDeleteId(null);
     }
   };
+
+  // Pagination
+  const totalPages = Math.ceil(items.length / RECORDS_PER_PAGE);
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PER_PAGE;
+    return items.slice(start, start + RECORDS_PER_PAGE);
+  }, [items, currentPage]);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const left = Math.max(2, currentPage - 2);
+    const right = Math.min(totalPages - 1, currentPage + 2);
+    pages.push(1);
+    if (left > 2) pages.push('...');
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  }, [currentPage, totalPages]);
 
   const getStatusBadgeClass = (st) => {
     switch (st) {
@@ -221,12 +245,10 @@ export const MaterialContributionsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
+                {paginatedItems.map((item, idx) => (
                   <tr
                     key={item._id}
-                    className={`border-b border-outline-variant/60 hover:bg-surface-container-low/50 transition-colors ${
-                      idx % 2 === 0 ? '' : 'bg-surface-container-lowest/40'
-                    }`}
+                    className={`border-b border-outline-variant/60 hover:bg-surface-container-low/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-container-lowest/40'}`}
                   >
                     <td className="px-4 py-3 font-label-md text-label-md text-on-background font-medium">
                       <div>{item.donorName}</div>
@@ -279,9 +301,43 @@ export const MaterialContributionsPage = () => {
             </table>
           </div>
 
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-t border-outline-variant bg-surface-container-low/40 flex-wrap">
+              <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                Page <span className="font-bold text-on-background">{currentPage}</span> of{' '}
+                <span className="font-bold text-on-background">{totalPages}</span>
+                {' '}·{' '}
+                {(currentPage - 1) * RECORDS_PER_PAGE + 1}–{Math.min(currentPage * RECORDS_PER_PAGE, items.length)} of {items.length}
+              </span>
+              <div className="flex items-center gap-1 flex-wrap">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary">
+                  <span className="material-symbols-outlined text-sm leading-none">chevron_left</span>
+                  <span className="hidden sm:inline">Prev</span>
+                </button>
+                {pageNumbers.map((page, i) =>
+                  page === '...' ? (
+                    <span key={`m-${i}`} className="px-2 text-on-surface-variant text-xs select-none">…</span>
+                  ) : (
+                    <button key={page} onClick={() => setCurrentPage(page)}
+                      className={`min-w-[32px] h-[32px] rounded-lg text-xs font-bold border transition-all ${currentPage === page ? 'bg-primary text-on-primary border-primary shadow-sm' : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'}`}>
+                      {page}
+                    </button>
+                  )
+                )}
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary">
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="material-symbols-outlined text-sm leading-none">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Mobile Cards View */}
           <div className="md:hidden divide-y divide-outline-variant/60">
-            {items.map((item) => (
+            {paginatedItems.map((item) => (
               <div key={item._id} className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -339,6 +395,25 @@ export const MaterialContributionsPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Mobile Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-outline-variant bg-surface-container-low/40 md:hidden">
+              <span className="text-xs text-on-surface-variant">
+                Page <b className="text-on-background">{currentPage}</b> / <b className="text-on-background">{totalPages}</b>
+              </span>
+              <div className="flex gap-1">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary">
+                  Prev
+                </button>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary">
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

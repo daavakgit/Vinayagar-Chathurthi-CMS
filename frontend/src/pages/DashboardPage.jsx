@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../context/YearContext';
 import {
-  getDashboardApi, getCollectionsApi, getExpensesApi, getSplitsApi,
+  getDashboardApi, getCollectionsApi, getExpensesApi, getSplitsApi, getMaterialContributionsApi,
 } from '../services/api';
 import { formatCurrency, formatCompactCurrency, formatDate, getCategoryLabel } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -74,10 +74,11 @@ export const DashboardPage = () => {
   const [error, setError] = useState('');
 
   // Active Modal State
-  const [activeModal, setActiveModal] = useState(null); // 'total' | 'collections' | 'expenses' | 'splits' | 'working' | 'student' | 'general_public' | 'balance'
+  const [activeModal, setActiveModal] = useState(null);
   const [collectionsList, setCollectionsList] = useState([]);
   const [expensesList, setExpensesList] = useState([]);
   const [splitsList, setSplitsList] = useState([]);
+  const [materialsList, setMaterialsList] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
 
   const loadDashboard = useCallback(async () => {
@@ -107,6 +108,9 @@ export const DashboardPage = () => {
       } else if (type === 'expenses') {
         const res = await getExpensesApi({ year: selectedYear });
         if (res?.success) setExpensesList(res.data || []);
+      } else if (type === 'materials') {
+        const res = await getMaterialContributionsApi({ year: selectedYear });
+        if (res?.success) setMaterialsList(res.data || []);
       } else if (type === 'splits' || type === 'total' || type === 'balance') {
         const [collectionsRes, splitsRes, expensesRes] = await Promise.all([
           getCollectionsApi({ year: selectedYear }),
@@ -247,6 +251,19 @@ export const DashboardPage = () => {
           trendLabel={`Given: ${formatCurrency(m.totalSplitGiven || 0)}`}
           onClick={() => openModal('splits')}
           tooltipText="Click to view split advances given, recovered, and pending"
+        />
+
+        {/* 6. Click Material Contributions -> Opens Materials Modal */}
+        <StatCard
+          label="Material Contributions"
+          value={`${m.totalMaterialItems || 0} Items`}
+          subValue={m.totalMaterialValue > 0 ? `Est. ${formatCurrency(m.totalMaterialValue)}` : 'Physical donations'}
+          icon="inventory_2"
+          colorClass="text-purple-600"
+          bgClass="bg-purple-500/10"
+          trendLabel={`${m.materialReceivedCount || 0} Received · ${m.materialPledgedCount || 0} Pledged`}
+          onClick={() => openModal('materials')}
+          tooltipText="Click to view all material & physical item donations"
         />
       </div>
 
@@ -759,6 +776,58 @@ export const DashboardPage = () => {
             </div>
           </div>
         </div>
+      </ModalWrapper>
+
+      {/* MODAL 9: MATERIAL CONTRIBUTIONS */}
+      <ModalWrapper
+        isOpen={activeModal === 'materials'}
+        onClose={() => setActiveModal(null)}
+        title="Material Contributions"
+        icon="inventory_2"
+        iconColor="text-purple-600"
+      >
+        <div className="grid grid-cols-3 gap-2 text-center bg-surface-container p-3 rounded-xl border border-outline-variant">
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Total Items</div>
+            <div className="font-title-md font-bold text-purple-600">{m.totalMaterialItems || 0}</div>
+          </div>
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Received</div>
+            <div className="font-title-md font-bold text-emerald-600">{m.materialReceivedCount || 0}</div>
+          </div>
+          <div>
+            <div className="font-label-sm text-[11px] text-on-surface-variant">Pledged</div>
+            <div className="font-title-md font-bold text-amber-600">{m.materialPledgedCount || 0}</div>
+          </div>
+        </div>
+
+        {modalLoading && (materialsList || []).length === 0 ? (
+          <LoadingSpinner label="Loading material contributions..." />
+        ) : (materialsList || []).length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant font-body-md">No material contribution records found for {selectedYear}</p>
+        ) : (
+          <div className="divide-y divide-outline-variant/60">
+            {(materialsList || []).map((item) => (
+              <div key={item._id} className="py-3 flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-label-md font-bold text-on-background">{item.donorName}</div>
+                  <div className="font-label-sm text-xs text-on-surface-variant">{item.itemName} · Qty: {item.quantity}</div>
+                  <div className="font-label-sm text-[11px] text-on-surface-variant">{item.category} · {formatDate(item.date)}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  {item.estimatedValue > 0 && (
+                    <div className="font-label-md font-bold text-purple-600">{formatCurrency(item.estimatedValue)}</div>
+                  )}
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 ${
+                    item.status === 'Received' ? 'bg-emerald-500/10 text-emerald-600' :
+                    item.status === 'Used' ? 'bg-blue-500/10 text-blue-600' :
+                    'bg-amber-500/10 text-amber-600'
+                  }`}>{item.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </ModalWrapper>
     </div>
   );

@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../../context/YearContext';
-import { getDashboardApi, getReportsApi } from '../../services/api';
+import {
+  getDashboardApi,
+  getReportsApi,
+  getCollectionsApi,
+  getExpensesApi,
+  getSplitsApi,
+  getMaterialContributionsApi,
+} from '../../services/api';
 import { formatCurrency, formatCompactCurrency } from '../../utils/formatters';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { exportReportToPDF } from '../../utils/exportPdf';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
@@ -30,6 +38,7 @@ export const UserReportsPage = () => {
   });
 
   const [loading, setLoading] = useState(!metrics);
+  const [exporting, setExporting] = useState('');
 
   const loadReportMetrics = useCallback(async () => {
     try {
@@ -51,7 +60,7 @@ export const UserReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, cacheKey]);
+  }, [selectedYear, cacheKey, metrics]);
 
   useEffect(() => {
     try {
@@ -64,6 +73,32 @@ export const UserReportsPage = () => {
     loadReportMetrics();
   }, [selectedYear]);
 
+  const handleExportPDF = async () => {
+    try {
+      setExporting('pdf');
+      const [colRes, expRes, splitRes, matRes] = await Promise.all([
+        getCollectionsApi({ year: selectedYear }),
+        getExpensesApi({ year: selectedYear }),
+        getSplitsApi({ year: selectedYear }),
+        getMaterialContributionsApi({ year: selectedYear }),
+      ]);
+
+      exportReportToPDF({
+        eventName: 'Vinayagar Chathurthi',
+        year: selectedYear,
+        reportData: reportData,
+        collections: colRes.success ? colRes.data : [],
+        expenses: expRes.success ? expRes.data : [],
+        splits: splitRes.success ? splitRes.data : [],
+        materials: matRes.success ? matRes.data : [],
+      });
+    } catch (err) {
+      console.error('User PDF Export failed:', err);
+    } finally {
+      setExporting('');
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <LoadingSpinner label="Loading festival financial charts..." />
@@ -71,7 +106,6 @@ export const UserReportsPage = () => {
   );
 
   const m = metrics || {};
-  const r = reportData || {};
 
   const balanceChartData = [
     { name: 'Total Collection', value: m.totalCollection || 0, fill: '#006a35' },
@@ -88,13 +122,27 @@ export const UserReportsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="font-headline-lg text-2xl md:text-3xl font-bold text-on-background">
-          Financial Analytics & Reports
-        </h1>
-        <p className="font-body-md text-xs md:text-sm text-on-surface-variant">
-          Vinayagar Chathurthi {selectedYear} · Visual Financial Summaries (View Only)
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="font-headline-lg text-2xl md:text-3xl font-bold text-on-background">
+            Financial Analytics & Reports
+          </h1>
+          <p className="font-body-md text-xs md:text-sm text-on-surface-variant">
+            Vinayagar Chathurthi {selectedYear} · Visual Financial Summaries (View Only)
+          </p>
+        </div>
+        <button
+          onClick={handleExportPDF}
+          disabled={exporting === 'pdf'}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-bold hover:bg-primary/90 transition-all active:scale-95 cursor-pointer shadow-xs disabled:opacity-50 flex-shrink-0"
+        >
+          {exporting === 'pdf' ? (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="material-symbols-outlined text-base">picture_as_pdf</span>
+          )}
+          <span>Export PDF Report</span>
+        </button>
       </div>
 
       {/* Top 3 Summary Cards */}

@@ -3,6 +3,7 @@ import Expense from '../models/Expense.js';
 import Split from '../models/Split.js';
 import Recovery from '../models/Recovery.js';
 import Settings from '../models/Settings.js';
+import MaterialContribution from '../models/MaterialContribution.js';
 
 // GET /api/dashboard?year=2026
 export const getDashboardMetrics = async (req, res) => {
@@ -10,11 +11,12 @@ export const getDashboardMetrics = async (req, res) => {
     const yearParam = req.query.year ? Number(req.query.year) : 2026;
 
     // Execute database queries in parallel with lean() for top speed
-    const [yearSetting, collections, expenses, splits] = await Promise.all([
+    const [yearSetting, collections, expenses, splits, materials] = await Promise.all([
       Settings.findOne({ year: yearParam }).lean(),
       Collection.find({ year: yearParam }).sort({ date: -1, createdAt: -1 }).lean(),
       Expense.find({ year: yearParam }).sort({ date: -1, createdAt: -1 }).lean(),
       Split.find({ year: yearParam }).lean(),
+      MaterialContribution.find({ year: yearParam }).lean(),
     ]);
 
     const totalContributors = collections.length;
@@ -94,6 +96,13 @@ export const getDashboardMetrics = async (req, res) => {
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 5);
 
+    // 6. Material Contributions metrics
+    const totalMaterialItems = materials.reduce((sum, m) => sum + Number(m.quantity || 0), 0);
+    const totalMaterialValue = materials.reduce((sum, m) => sum + Number(m.estimatedValue || 0), 0);
+    const materialReceivedCount = materials.filter(m => m.status === 'Received').length;
+    const materialPledgedCount = materials.filter(m => m.status === 'Pledged').length;
+    const materialUsedCount = materials.filter(m => m.status === 'Used').length;
+
     res.json({
       success: true,
       year: yearParam,
@@ -115,6 +124,11 @@ export const getDashboardMetrics = async (req, res) => {
         totalSplitGiven,
         totalRecovered,
         yetToRecover,
+        totalMaterialItems,
+        totalMaterialValue,
+        materialReceivedCount,
+        materialPledgedCount,
+        materialUsedCount,
         recentActivity,
       },
     });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useYear } from '../../context/YearContext';
-import { getDashboardApi, getCollectionsApi, getExpensesApi, getSettingsApi } from '../../services/api';
+import { getDashboardApi, getCollectionsApi, getExpensesApi, getSettingsApi, getMaterialContributionsApi } from '../../services/api';
 import { formatCurrency, formatDate, getCategoryLabel } from '../../utils/formatters';
 import { QrPaymentModal } from '../../components/QrPaymentModal';
 
@@ -61,6 +61,15 @@ export const UserHomePage = () => {
     }
   });
 
+  const [materials, setMaterials] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`${cacheKey}_materials`);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [loading, setLoading] = useState(!metrics);
   const [showQrModal, setShowQrModal] = useState(false);
 
@@ -76,11 +85,12 @@ export const UserHomePage = () => {
 
   const loadHomeData = useCallback(async (yearKey, key) => {
     try {
-      const [dashRes, colRes, expRes, setRes] = await Promise.all([
+      const [dashRes, colRes, expRes, setRes, matRes] = await Promise.all([
         getDashboardApi(yearKey),
         getCollectionsApi({ year: yearKey, limit: 5 }),
         getExpensesApi({ year: yearKey, limit: 5 }),
         getSettingsApi(),
+        getMaterialContributionsApi({ year: yearKey }),
       ]);
 
       if (dashRes?.success) {
@@ -99,6 +109,10 @@ export const UserHomePage = () => {
         setSettings(setRes.data);
         try { sessionStorage.setItem(`${key}_settings`, JSON.stringify(setRes.data)); } catch { /* ignore */ }
       }
+      if (matRes?.success) {
+        setMaterials(matRes.data || []);
+        try { sessionStorage.setItem(`${key}_materials`, JSON.stringify(matRes.data || [])); } catch { /* ignore */ }
+      }
     } catch (err) {
       console.error('Error loading User Home data:', err);
     } finally {
@@ -114,6 +128,7 @@ export const UserHomePage = () => {
       setCollections([]);
       setExpenses([]);
       setSettings(null);
+      setMaterials([]);
       setLoading(true);
     }
     loadHomeData(selectedYear, cacheKey);
@@ -304,6 +319,61 @@ export const UserHomePage = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Material Contributions Summary */}
+      <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
+          <h2 className="font-title-md font-bold text-on-background flex items-center gap-2">
+            <span className="material-symbols-outlined text-purple-600">inventory_2</span>
+            Material Contributions
+          </h2>
+          <span className="font-label-sm text-xs text-on-surface-variant">View Only</span>
+        </div>
+
+        {materials.length === 0 ? (
+          <p className="text-center py-6 text-on-surface-variant text-xs">No material contributions recorded yet</p>
+        ) : (
+          <>
+            {/* Metric chips */}
+            <div className="flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-xs font-bold border border-purple-500/20">
+                {materials.length} Item{materials.length !== 1 ? 's' : ''} Total
+              </span>
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold border border-emerald-500/20">
+                {materials.filter(m => m.status === 'Received').length} Received
+              </span>
+              <span className="px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold border border-amber-500/20">
+                {materials.filter(m => m.status === 'Pledged').length} Pledged
+              </span>
+            </div>
+            <div className="divide-y divide-outline-variant/50">
+              {materials.slice(0, 5).map((m) => (
+                <div key={m._id} className="py-2.5 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-bold text-on-background">{m.donorName}</div>
+                    <div className="text-on-surface-variant text-[11px]">{m.itemName} · Qty: {m.quantity} · {m.category}</div>
+                  </div>
+                  <div className="text-right">
+                    {m.estimatedValue > 0 && (
+                      <div className="font-bold text-purple-600">₹{m.estimatedValue.toLocaleString('en-IN')}</div>
+                    )}
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      m.status === 'Received' ? 'bg-emerald-500/10 text-emerald-600' :
+                      m.status === 'Used' ? 'bg-blue-500/10 text-blue-600' :
+                      'bg-amber-500/10 text-amber-600'
+                    }`}>{m.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {materials.length > 5 && (
+              <div className="text-center text-xs text-on-surface-variant border-t border-outline-variant/40 pt-2">
+                + {materials.length - 5} more item{materials.length - 5 !== 1 ? 's' : ''} — visit the Material page to see all
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

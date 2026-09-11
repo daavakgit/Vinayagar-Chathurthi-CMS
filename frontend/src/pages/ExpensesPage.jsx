@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useYear } from '../context/YearContext';
 import { getExpensesApi, createExpenseApi, updateExpenseApi, deleteExpenseApi } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -11,6 +11,7 @@ import { Toast } from '../components/Toast';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const PIE_COLORS = ['#9e3d00', '#735c00', '#006a35', '#203243', '#ba1a1a', '#c64f00', '#008645', '#574500'];
+const RECORDS_PER_PAGE = 10;
 
 export const ExpensesPage = () => {
   const { selectedYear, currentSetting } = useYear();
@@ -25,6 +26,7 @@ export const ExpensesPage = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState({ message: '' });
+  const [currentPage, setCurrentPage] = useState(1);
 
   const expenseCategories = currentSetting?.expenseCategories || [
     'Decoration', 'Food', 'Sound System', 'Pooja Items', 'Electricity', 'Transport', 'Printing', 'Cleaning', 'Hall/Ground', 'Other',
@@ -41,6 +43,7 @@ export const ExpensesPage = () => {
         setExpenses(res.data || []);
         setTotalExpenseAmount(res.totalExpenseAmount || 0);
         setLargestExpense(res.largestExpense || 0);
+        setCurrentPage(1);
       }
     } catch (err) {
       setToast({ message: err.message, type: 'error' });
@@ -84,6 +87,27 @@ export const ExpensesPage = () => {
     }
   };
 
+  // Pagination
+  const totalPages = Math.ceil(expenses.length / RECORDS_PER_PAGE);
+  const paginatedExpenses = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PER_PAGE;
+    return expenses.slice(start, start + RECORDS_PER_PAGE);
+  }, [expenses, currentPage]);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const delta = 2;
+    const left = Math.max(2, currentPage - delta);
+    const right = Math.min(totalPages - 1, currentPage + delta);
+    pages.push(1);
+    if (left > 2) pages.push('...');
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  }, [currentPage, totalPages]);
+
   // Category breakdown for pie chart
   const categoryMap = {};
   expenses.forEach((e) => {
@@ -103,7 +127,7 @@ export const ExpensesPage = () => {
           <p className="font-body-md text-on-surface-variant">Track all expenditures for {selectedYear} event</p>
         </div>
         <button onClick={() => { setEditData(null); setModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary text-on-secondary font-label-md font-bold shadow-sm hover:bg-secondary-container transition-all active:scale-95">
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary text-on-secondary font-label-md font-bold shadow-sm hover:bg-secondary-container transition-all active:scale-95 cursor-pointer">
           <span className="material-symbols-outlined text-xl">add</span>
           Add Expense
         </button>
@@ -139,18 +163,22 @@ export const ExpensesPage = () => {
               actionLabel="Add Expense" onAction={() => { setEditData(null); setModalOpen(true); }} />
           ) : (
             <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
-              <div className="hidden md:block">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-container-low border-b border-outline-variant">
                     <tr>
-                      {['Expense Name', 'Category', 'Amount', 'Date', 'Description', 'Actions'].map(h => (
+                      {['#', 'Expense Name', 'Category', 'Amount', 'Date', 'Description', 'Actions'].map(h => (
                         <th key={h} className="px-4 py-3 text-left font-label-md text-label-md text-on-surface-variant font-medium">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {expenses.map((e, idx) => (
+                    {paginatedExpenses.map((e, idx) => (
                       <tr key={e._id} className={`border-b border-outline-variant/60 hover:bg-surface-container-low/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-container-lowest/40'}`}>
+                        <td className="px-4 py-3 font-label-sm text-on-surface-variant">
+                          {(currentPage - 1) * RECORDS_PER_PAGE + idx + 1}
+                        </td>
                         <td className="px-4 py-3 font-label-md text-label-md text-on-background font-medium">{e.expenseName}</td>
                         <td className="px-4 py-3">
                           <span className="px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-label-sm text-[11px] font-semibold border border-secondary/20">{e.category}</span>
@@ -176,7 +204,7 @@ export const ExpensesPage = () => {
 
               {/* Mobile Cards */}
               <div className="md:hidden divide-y divide-outline-variant/60">
-                {expenses.map((e) => (
+                {paginatedExpenses.map((e) => (
                   <div key={e._id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -199,6 +227,46 @@ export const ExpensesPage = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-t border-outline-variant bg-surface-container-low/40 flex-wrap">
+                  <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                    Page <span className="font-bold text-on-background">{currentPage}</span> of{' '}
+                    <span className="font-bold text-on-background">{totalPages}</span>
+                    {' '}·{' '}
+                    {(currentPage - 1) * RECORDS_PER_PAGE + 1}–{Math.min(currentPage * RECORDS_PER_PAGE, expenses.length)} of {expenses.length}
+                  </span>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary"
+                    >
+                      <span className="material-symbols-outlined text-sm leading-none">chevron_left</span>
+                      <span className="hidden sm:inline">Prev</span>
+                    </button>
+                    {pageNumbers.map((page, i) =>
+                      page === '...' ? (
+                        <span key={`e-${i}`} className="px-2 text-on-surface-variant text-xs select-none">…</span>
+                      ) : (
+                        <button key={page} onClick={() => setCurrentPage(page)}
+                          className={`min-w-[32px] h-[32px] rounded-lg text-xs font-bold border transition-all ${currentPage === page ? 'bg-primary text-on-primary border-primary shadow-sm' : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'}`}>
+                          {page}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-surface border-outline-variant text-on-surface-variant enabled:hover:bg-primary enabled:hover:text-on-primary enabled:hover:border-primary"
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <span className="material-symbols-outlined text-sm leading-none">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

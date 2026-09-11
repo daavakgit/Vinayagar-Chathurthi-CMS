@@ -9,6 +9,7 @@ export const exportReportToPDF = ({
   collections = [],
   expenses = [],
   splits = [],
+  materials = [],
 }) => {
   const doc = new jsPDF();
 
@@ -22,7 +23,7 @@ export const exportReportToPDF = ({
   doc.text(`${eventName} - ${year}`, 14, 15);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Financial Report • Generated on ${new Date().toLocaleDateString('en-IN')}`, 14, 22);
+  doc.text(`Financial & Material Contribution Report • Generated on ${new Date().toLocaleDateString('en-IN')}`, 14, 22);
 
   let currentY = 36;
 
@@ -109,6 +110,41 @@ export const exportReportToPDF = ({
       body: expenseRows,
       theme: 'grid',
       headStyles: { fillColor: [115, 92, 0], textColor: 255 },
+      styles: { fontSize: 8 },
+    });
+
+    currentY = doc.lastAutoTable.finalY + 10;
+  }
+
+  // Material Contributions Table
+  if (materials.length > 0) {
+    if (currentY > 240) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(9, 29, 46);
+    doc.text('Material Contribution Details', 14, currentY);
+    currentY += 4;
+
+    const materialRows = materials.map((m, i) => [
+      i + 1,
+      m.donorName,
+      m.itemName,
+      m.quantity,
+      m.estimatedValue > 0 ? formatPdfCurrency(m.estimatedValue) : '-',
+      m.category,
+      m.status,
+      formatDate(m.date),
+    ]);
+
+    doc.autoTable({
+      startY: currentY,
+      head: [['S.No', 'Donor Name', 'Item Name', 'Quantity', 'Est. Value', 'Category', 'Status', 'Date']],
+      body: materialRows,
+      theme: 'grid',
+      headStyles: { fillColor: [102, 51, 153], textColor: 255 },
       styles: { fontSize: 8 },
     });
 
