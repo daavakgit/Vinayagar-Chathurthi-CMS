@@ -13,6 +13,7 @@ import { ExpensesPage } from './pages/ExpensesPage';
 import { SplitPage } from './pages/SplitPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { MaterialContributionsPage } from './pages/MaterialContributionsPage';
 
 // Public & User Components
 import { SplashScreen } from './components/SplashScreen';
@@ -25,6 +26,7 @@ import { UserExpensesPage } from './pages/user/UserExpensesPage';
 import { UserSplitPage } from './pages/user/UserSplitPage';
 import { UserReportsPage } from './pages/user/UserReportsPage';
 import { UserSettingsPage } from './pages/user/UserSettingsPage';
+import { UserMaterialPage } from './pages/user/UserMaterialPage';
 
 // Protected Admin System Layout Wrapper
 const AdminLayout = () => {
@@ -46,6 +48,7 @@ const AdminLayout = () => {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/material" element={<MaterialContributionsPage />} />
               <Route path="/split" element={<SplitPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
@@ -80,6 +83,7 @@ function App() {
             <Route path="home" element={<UserHomePage />} />
             <Route path="collections" element={<UserCollectionsPage />} />
             <Route path="expenses" element={<UserExpensesPage />} />
+            <Route path="material" element={<UserMaterialPage />} />
             <Route path="split" element={<UserSplitPage />} />
             <Route path="reports" element={<UserReportsPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
@@ -91,6 +95,7 @@ function App() {
             <Route path="home" element={<UserHomePage />} />
             <Route path="collections" element={<UserCollectionsPage />} />
             <Route path="expenses" element={<UserExpensesPage />} />
+            <Route path="material" element={<UserMaterialPage />} />
             <Route path="split" element={<UserSplitPage />} />
             <Route path="reports" element={<UserReportsPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
@@ -102,6 +107,7 @@ function App() {
           {/* Backward Compatibility Redirects */}
           <Route path="/collections" element={<Navigate to="/admin/collections" replace />} />
           <Route path="/expenses" element={<Navigate to="/admin/expenses" replace />} />
+          <Route path="/material" element={<Navigate to="/admin/material" replace />} />
           <Route path="/split" element={<Navigate to="/admin/split" replace />} />
           <Route path="/reports" element={<Navigate to="/admin/reports" replace />} />
           <Route path="/settings" element={<Navigate to="/admin/settings" replace />} />

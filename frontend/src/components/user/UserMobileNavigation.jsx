@@ -4,10 +4,11 @@ import { NavLink } from 'react-router-dom';
 export const UserMobileNavigation = () => {
   const navItems = [
     { label: 'Home', path: '/portal/home', icon: 'home' },
-    { label: 'Collections', path: '/portal/collections', icon: 'payments' },
-    { label: 'Expenses', path: '/portal/expenses', icon: 'receipt_long' },
+    { label: 'Collect', path: '/portal/collections', icon: 'payments' },
+    { label: 'Spend', path: '/portal/expenses', icon: 'receipt_long' },
+    { label: 'Material', path: '/portal/material', icon: 'inventory_2' },
     { label: 'Split', path: '/portal/split', icon: 'handshake' },
-    { label: 'Reports', path: '/portal/reports', icon: 'bar_chart' },
+    { label: 'Stats', path: '/portal/reports', icon: 'bar_chart' },
     { label: 'Settings', path: '/portal/settings', icon: 'settings' },
   ];
 
@@ -18,7 +19,7 @@ export const UserMobileNavigation = () => {
           key={item.path}
           to={item.path}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all duration-150 active:scale-90 min-w-0 ${
+            `flex flex-col items-center justify-center py-1 px-0.5 rounded-xl transition-all duration-150 active:scale-90 flex-1 min-w-0 ${
               isActive
                 ? 'text-primary font-bold bg-primary/10 border-b-2 border-primary'
                 : 'text-on-surface-variant hover:text-primary'
@@ -33,7 +34,7 @@ export const UserMobileNavigation = () => {
               >
                 {item.icon}
               </span>
-              <span className="font-label-sm text-[9px] sm:text-[10px] mt-0.5 truncate max-w-[52px]">
+              <span className="font-label-sm text-[9px] mt-0.5 truncate w-full text-center leading-none">
                 {item.label}
               </span>
             </>

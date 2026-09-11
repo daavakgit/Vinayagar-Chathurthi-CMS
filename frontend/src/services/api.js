@@ -112,6 +112,13 @@ export const clearDataApi = (payload) => api.post('/settings/clear-data', payloa
 // Reports
 export const getReportsApi = (params) => api.get('/reports', { params });
 
+// Material Contributions
+export const getMaterialContributionsApi = (params) => api.get('/material-contributions', { params });
+export const getMaterialContributionByIdApi = (id) => api.get(`/material-contributions/${id}`);
+export const createMaterialContributionApi = (data) => api.post('/material-contributions', data);
+export const updateMaterialContributionApi = (id, data) => api.put(`/material-contributions/${id}`, data);
+export const deleteMaterialContributionApi = (id) => api.delete(`/material-contributions/${id}`);
+
 // Authentication
 export const loginAdminApi = (credentials) => api.post('/auth/login', credentials);
 

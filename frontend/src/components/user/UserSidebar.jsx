@@ -17,6 +17,7 @@ export const UserSidebar = () => {
     { label: 'Home', path: '/portal/home', icon: 'home' },
     { label: 'Collections', path: '/portal/collections', icon: 'payments' },
     { label: 'Expenses', path: '/portal/expenses', icon: 'receipt_long' },
+    { label: 'Material', path: '/portal/material', icon: 'inventory_2' },
     { label: 'Split & Recovery', path: '/portal/split', icon: 'handshake' },
     { label: 'Reports', path: '/portal/reports', icon: 'analytics' },
     { label: 'Settings', path: '/portal/settings', icon: 'settings' },

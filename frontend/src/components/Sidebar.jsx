@@ -17,6 +17,7 @@ export const Sidebar = () => {
     { label: 'Dashboard', path: '/admin', icon: 'dashboard', end: true },
     { label: 'Collections', path: '/admin/collections', icon: 'payments' },
     { label: 'Expenses', path: '/admin/expenses', icon: 'receipt_long' },
+    { label: 'Material', path: '/admin/material', icon: 'inventory_2' },
     { label: 'Split & Advance', path: '/admin/split', icon: 'handshake' },
     { label: 'Reports', path: '/admin/reports', icon: 'analytics' },
     { label: 'Settings', path: '/admin/settings', icon: 'settings' },

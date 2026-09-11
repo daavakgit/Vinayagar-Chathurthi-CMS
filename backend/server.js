@@ -12,6 +12,7 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import materialContributionRoutes from './routes/materialContributionRoutes.js';
 
 dotenv.config();
 
@@ -36,6 +37,8 @@ app.use('/api/recoveries', recoveryRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/material-contributions', materialContributionRoutes);
+app.use('/api/material', materialContributionRoutes);
 
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
