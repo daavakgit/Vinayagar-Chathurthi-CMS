@@ -51,12 +51,10 @@
     width: 0%;
     opacity: 0.4;
   }
-
   50% {
     width: 70%;
     opacity: 1;
   }
-
   100% {
     width: 100%;
     opacity: 1;
@@ -64,7 +62,7 @@
 }
 
 .animate-splash-progress {
-  animation: splashProgress 3s ease-in-out forwards;
+  animation: splashProgress 2.8s ease-in-out forwards;
 }
 
 @keyframes splashFadeIn {
@@ -72,7 +70,6 @@
     opacity: 0;
     transform: scale(0.95);
   }
-
   100% {
     opacity: 1;
     transform: scale(1);
@@ -81,4 +78,91 @@
 
 .animate-splash-fade-in {
   animation: splashFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Premium Motion Graphic Animations for Splash Screen */
+@keyframes ganeshaReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(10px);
+    filter: blur(10px) brightness(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px) brightness(1);
+  }
+}
+
+.animate-ganesha-reveal {
+  animation: ganeshaReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes haloGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.85;
+  }
+}
+
+.animate-halo-glow {
+  animation: haloGlow 3s ease-in-out infinite;
+}
+
+@keyframes textRevealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+.animate-text-reveal-1 {
+  animation: textRevealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-text-reveal-2 {
+  animation: textRevealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+  opacity: 0;
+}
+
+.animate-text-reveal-3 {
+  animation: textRevealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+  opacity: 0;
+}
+
+.animate-text-reveal-4 {
+  animation: textRevealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.1s forwards;
+  opacity: 0;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-80px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.animate-particle {
+  animation: particleFloat 4s ease-in-out infinite;
 }
