@@ -6,7 +6,7 @@ import { QrPaymentModal } from '../../components/QrPaymentModal';
 
 const SummarySkeleton = () => (
   <div className="space-y-6 animate-pulse">
-    <div className="bg-surface-container-low border border-outline-variant/60 p-6 rounded-3xl h-32" />
+    <div className="bg-surface-container-low border border-outline-variant/60 p-6 rounded-3xl h-36" />
     <div className="bg-surface-container-low border border-outline-variant/60 p-5 rounded-2xl h-24" />
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {[1, 2, 3, 4].map((i) => (
@@ -141,19 +141,27 @@ export const UserHomePage = () => {
   const announcements = s.announcements || 'May Lord Ganesha bless our community with peace, harmony, and prosperity!';
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary-container/40 via-surface to-tertiary-container/30 border border-outline-variant p-6 rounded-3xl shadow-sm space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🪔</span>
-          <span className="font-label-sm text-xs font-bold text-primary uppercase tracking-wider">Welcome Community Member</span>
+    <div className="space-y-6 animate-splash-fade-in">
+      {/* Devotional Festive Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/80 via-orange-950/70 to-slate-950 border border-amber-500/40 p-6 md:p-8 rounded-3xl shadow-[0_4px_25px_rgba(245,158,11,0.15)] space-y-3">
+        {/* Glow Accents */}
+        <div className="absolute -right-16 -top-16 w-56 h-56 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-56 h-56 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl animate-pulse">🪔</span>
+            <span className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-xs sm:text-sm font-extrabold tracking-wider">
+              நமது விழா • நமது பங்களிப்பு
+            </span>
+          </div>
+          <h1 className="font-headline-lg text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-orange-200 to-yellow-100 drop-shadow-sm">
+            விநாயகர் சதுர்த்தி விழா {selectedYear}
+          </h1>
+          <p className="font-body-md text-amber-100/80 text-xs sm:text-sm md:text-base max-w-2xl leading-relaxed">
+            {announcements}
+          </p>
         </div>
-        <h1 className="font-headline-lg text-2xl md:text-3xl font-bold text-on-background">
-          Vinayagar Chathurthi {selectedYear}
-        </h1>
-        <p className="font-body-md text-on-surface-variant text-sm md:text-base">
-          Transparent real-time overview of collections, expenses, recoveries, and event updates.
-        </p>
       </div>
 
       {/* High-visibility QR Contribution Banner Card */}
@@ -222,41 +230,49 @@ export const UserHomePage = () => {
         onClose={() => setShowQrModal(false)} 
       />
 
-      {/* Summary KPI Cards */}
+      {/* Summary KPI Cards with Vibrant Hover Micro-Interactions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2">
+        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-500/40">
           <div className="flex items-center justify-between">
             <span className="font-label-sm text-xs font-semibold text-on-surface-variant">Total Collection</span>
-            <span className="material-symbols-outlined text-tertiary text-xl">account_balance_wallet</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-xl">account_balance_wallet</span>
+            </div>
           </div>
-          <div className="font-headline-md text-2xl font-bold text-tertiary">{formatCurrency(m.totalCollection)}</div>
+          <div className="font-headline-md text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(m.totalCollection)}</div>
           <div className="font-label-sm text-[11px] text-on-surface-variant">Direct + Split Recoveries</div>
         </div>
 
-        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2">
+        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-error/40">
           <div className="flex items-center justify-between">
             <span className="font-label-sm text-xs font-semibold text-on-surface-variant">Total Expenses</span>
-            <span className="material-symbols-outlined text-error text-xl">receipt_long</span>
+            <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-error text-xl">receipt_long</span>
+            </div>
           </div>
           <div className="font-headline-md text-2xl font-bold text-error">{formatCurrency(m.totalExpenses)}</div>
           <div className="font-label-sm text-[11px] text-on-surface-variant">All categories combined</div>
         </div>
 
-        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2">
+        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40">
           <div className="flex items-center justify-between">
             <span className="font-label-sm text-xs font-semibold text-on-surface-variant">Current Balance</span>
-            <span className="material-symbols-outlined text-primary text-xl">trending_up</span>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-xl">trending_up</span>
+            </div>
           </div>
           <div className="font-headline-md text-2xl font-bold text-primary">{formatCurrency(m.eventBalance)}</div>
           <div className="font-label-sm text-[11px] text-on-surface-variant">Total Collection minus expenses</div>
         </div>
 
-        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2">
+        <div className="bg-surface border border-outline-variant p-5 rounded-2xl glass-card space-y-2 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-amber-500/40">
           <div className="flex items-center justify-between">
             <span className="font-label-sm text-xs font-semibold text-on-surface-variant">Total Contributors</span>
-            <span className="material-symbols-outlined text-secondary text-xl">groups</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl">groups</span>
+            </div>
           </div>
-          <div className="font-headline-md text-2xl font-bold text-secondary">{m.totalContributors || 0}</div>
+          <div className="font-headline-md text-2xl font-bold text-amber-600 dark:text-amber-400">{m.totalContributors || 0}</div>
           <div className="font-label-sm text-[11px] text-on-surface-variant">{m.paidContributorsCount || 0} Paid Contributors</div>
         </div>
       </div>
@@ -264,13 +280,13 @@ export const UserHomePage = () => {
       {/* Recent Collections & Recent Expenses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recent Collections */}
-        <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
             <h2 className="font-title-md font-bold text-on-background flex items-center gap-2">
-              <span className="material-symbols-outlined text-tertiary">payments</span>
+              <span className="material-symbols-outlined text-emerald-600">payments</span>
               Recent Collections
             </h2>
-            <span className="font-label-sm text-xs text-on-surface-variant">View Only</span>
+            <span className="font-label-sm text-xs text-on-surface-variant font-medium bg-surface-container px-2 py-0.5 rounded-full">View Only</span>
           </div>
 
           {collections.length === 0 ? (
@@ -278,13 +294,13 @@ export const UserHomePage = () => {
           ) : (
             <div className="divide-y divide-outline-variant/50">
               {collections.map((c) => (
-                <div key={c._id} className="py-2.5 flex items-center justify-between text-xs">
+                <div key={c._id} className="py-2.5 flex items-center justify-between text-xs hover:bg-surface-container-low/40 px-2 rounded-lg transition-colors">
                   <div>
                     <div className="font-bold text-on-background">{c.name}</div>
                     <div className="text-on-surface-variant text-[11px]">{getCategoryLabel(c.category)}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-tertiary">{formatCurrency(c.actualAmount)}</div>
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(c.actualAmount)}</div>
                     <span className="text-[10px] text-on-surface-variant">{c.paymentStatus}</span>
                   </div>
                 </div>
@@ -294,13 +310,13 @@ export const UserHomePage = () => {
         </div>
 
         {/* Recent Expenses */}
-        <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
             <h2 className="font-title-md font-bold text-on-background flex items-center gap-2">
               <span className="material-symbols-outlined text-error">receipt</span>
               Recent Expenses
             </h2>
-            <span className="font-label-sm text-xs text-on-surface-variant">View Only</span>
+            <span className="font-label-sm text-xs text-on-surface-variant font-medium bg-surface-container px-2 py-0.5 rounded-full">View Only</span>
           </div>
 
           {expenses.length === 0 ? (
@@ -308,7 +324,7 @@ export const UserHomePage = () => {
           ) : (
             <div className="divide-y divide-outline-variant/50">
               {expenses.map((e) => (
-                <div key={e._id} className="py-2.5 flex items-center justify-between text-xs">
+                <div key={e._id} className="py-2.5 flex items-center justify-between text-xs hover:bg-surface-container-low/40 px-2 rounded-lg transition-colors">
                   <div>
                     <div className="font-bold text-on-background">{e.expenseName}</div>
                     <div className="text-on-surface-variant text-[11px]">{e.category} · {formatDate(e.date)}</div>
@@ -322,13 +338,13 @@ export const UserHomePage = () => {
       </div>
 
       {/* Material Contributions Summary */}
-      <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-outline-variant rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
           <h2 className="font-title-md font-bold text-on-background flex items-center gap-2">
             <span className="material-symbols-outlined text-purple-600">inventory_2</span>
             Material Contributions
           </h2>
-          <span className="font-label-sm text-xs text-on-surface-variant">View Only</span>
+          <span className="font-label-sm text-xs text-on-surface-variant font-medium bg-surface-container px-2 py-0.5 rounded-full">View Only</span>
         </div>
 
         {materials.length === 0 ? (
@@ -337,26 +353,26 @@ export const UserHomePage = () => {
           <>
             {/* Metric chips */}
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-xs font-bold border border-purple-500/20">
+              <span className="px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-xs font-bold border border-purple-500/20">
                 {materials.length} Item{materials.length !== 1 ? 's' : ''} Total
               </span>
-              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs font-bold border border-emerald-500/20">
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">
                 {materials.filter(m => m.status === 'Received').length} Received
               </span>
-              <span className="px-3 py-1 bg-amber-500/10 text-amber-600 rounded-full text-xs font-bold border border-amber-500/20">
+              <span className="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-bold border border-amber-500/20">
                 {materials.filter(m => m.status === 'Pledged').length} Pledged
               </span>
             </div>
             <div className="divide-y divide-outline-variant/50">
               {materials.slice(0, 5).map((m) => (
-                <div key={m._id} className="py-2.5 flex items-center justify-between text-xs">
+                <div key={m._id} className="py-2.5 flex items-center justify-between text-xs hover:bg-surface-container-low/40 px-2 rounded-lg transition-colors">
                   <div>
                     <div className="font-bold text-on-background">{m.donorName}</div>
                     <div className="text-on-surface-variant text-[11px]">{m.itemName} · Qty: {m.quantity} · {m.category}</div>
                   </div>
                   <div className="text-right">
                     {m.estimatedValue > 0 && (
-                      <div className="font-bold text-purple-600">₹{m.estimatedValue.toLocaleString('en-IN')}</div>
+                      <div className="font-bold text-purple-600 dark:text-purple-400">₹{m.estimatedValue.toLocaleString('en-IN')}</div>
                     )}
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                       m.status === 'Received' ? 'bg-emerald-500/10 text-emerald-600' :
